@@ -1,0 +1,387 @@
+#+SETUPFILE: template.org
+#+STARTUP: overview
+#+TITLE: A Python PID Controller
+
+* Introduction
+
+* Theory
+
+A PID controller, as its name implies, combines three terms to create a control signal: a
+/proportional/ term, which applies a constant gain to the current error value; an /integral/ term,
+which drives down steady-state error; and a /derivative/ term which helps to dampen the control
+system response. Written mathematically the control signal at time $t$ is:
+
+\begin{equation}
+    u(t) = K_p e(t) + K_i \int_0^t e(\tau) d\tau + K_d \frac{de(t)}{dt}
+\end{equation}
+
+We integrate these terms together as part of a control loop which measures the system state at a
+given moment in time and applies a control signal to the system to reduce any error.
+
+#+name: control-loop
+#+begin_src python
+  # Create the PID controller object with specific gains.
+  controller = PidController(kp, ki, kd)
+  controller.set_target(target)
+
+  # A basic control loop: measure the system error and produce a control signal.
+  while True:
+      t = system.get_time()
+      state = system.get_state()
+      resp = controller.next(t, state)
+      system.control(resp)
+#+end_src
+
+Our controller is a Python class which handles three main responsibilities:
+
+1. Remember the gains and desired state.
+2. Remember enough history to compute the higher-order terms.
+3. Encapsulate computation of the control signal.
+
+We need enough information at construction time to be able to set up the controller state and ensure
+that future calls to ~next()~ succeed. To do this we need to ask for an initial state and timestamp
+in addition to the gains.
+
+#+name: controller-class-decl
+#+begin_src python
+  class PidController():
+      """A classical PID controller which maintains state between calls.
+
+      This class is intended to be integrated into an external control loop. It
+      remembers enough of the state history to compute integral and derivative
+      terms, and produces a combined control signal with the given gains.
+      """
+
+      def __init__(self,
+                   kp: float,
+                   ki: float,
+                   kd: float,
+                   target: float,
+                   initial_state: float,
+                   t_0: int) -> None:
+          """Create a PID controller with the specified gains and initial state.
+
+          Parameters
+          ----------
+          kp, ki, kd    : The PID control gains.
+          target        : The desired system state, also called a "setpoint".
+          initial_state : The starting state of the system.
+          t_0           : The starting time.
+          """
+          # Gains for the proportional, integral, and derivative terms.
+          self._kp: float = kp
+          self._ki: float = ki
+          self._kd: float = kd
+
+          # The target state which the controller tries to maintain.
+          self._target: float = target
+
+          # Tracks the integrated error over time. This starts a 0 as no time has passed.
+          self._accumulated_error: float = 0.0
+          # Tracks the previous error to compute derivative term.
+          self._last_error: float = initial_state - target
+          # Tracks the previous sample time point for computing derivative.
+          self._last_t: int = t_0
+
+
+      def set_target(self, target: float) -> None:
+          """Set the controller target state."""
+          self._target = target
+#+end_src
+
+To compute a control signal the user must provide the current system state and time. We can then
+compute an error term by comparing the state against our desired state, and feed that down into the
+PID subexpressions to compute an overall control signal.
+
+#+name: controller-next-def
+#+begin_src python
+      def next(self, t: int, state: float) -> float:
+          """Incorporate a sample of the state at time t and produce a control value.
+
+          Because the controller is stateful, calls to this method should be
+          monotonic, that is, subsequent calls should not go backwards in time.
+
+          Parameters
+          ----------
+          t     : The time at which the sample was taken.
+          state : The system state at time t.
+          """
+          error = state - self._target
+          p = self._proportional(error)
+          i = self._integral(t, error)
+          d = self._derivative(t, error)
+          return p + i + d
+#+end_src
+
+Each sub-expression, in turn, is a simple computation on top of the previous state. We compute our
+weighted contribution to the control signal, record any updates to the controller state for the next
+step, and return.
+
+#+name: controller-terms-defs
+#+begin_src python
+      def _proportional(self, error: float) -> float:
+          return self._kp * error
+
+
+      def _integral(self, t: float, error: float) -> float:
+          self._accumulated_error += error
+          return self._ki * self._accumulated_error
+
+
+      def _derivative(self, t: float, error: float) -> float:
+          d_e = (error - self._last_error)
+          d_t = (t - self._last_t)
+          self._last_error = error
+          self._last_t = t
+          return self._kd * (d_e / d_t)
+#+end_src
+
+#+name: controller-full
+#+begin_src python :tangle pid_controller.py :exports none :noweb yes
+  <<controller-class-decl>>
+
+
+      <<controller-next-def>>
+
+      <<controller-terms-defs>>
+#+end_src
+
+* Test Harness
+
+To test the controller we need to simulate a physical system under control. A canonical example
+often used to illustrate PID control is a temperature controller. We'll simulate a very simple
+system which is experiencing a thermal load and use the PID controller to actuate a cooling
+system.
+
+Our system will consist of a body with mass $m$ and specific heat capacity $c_p$ to which we will
+apply a heat flow $\phi_{\mathrm{in}} = \frac{Q_{\mathrm{in}}}{\Delta t}$. Conceptually, this models
+a body which is being heated such as a CPU under load. The controller will drive a corresponding
+heat flow out of the body, $\phi_{\mathrm{out}} = \frac{Q_{\mathrm{out}}}{\Delta t}$, simulating a
+cooling device such as a fan.
+
+From this we derive the state equation for our test mass:
+
+\begin{equation}
+    T_{\mathrm{body}}(t_n) = T_{\mathrm{body}}(t_{n-1}) + (\phi_{\mathrm{in}}(t_{n}) - \phi_{\mathrm{out}}(t_{n})) (t-t_{n-1})
+\end{equation}
+
+Note that we allow both the input and output heat flows to vary with time; this is necessary to
+model the control loop. To model this in Python, we can start by defining the behavior of the test
+mass itself, independently of thermal flows.
+
+#+name: mass-class
+#+begin_src python
+  class ThermalMass():
+
+      def __init__(self, mass: float, cp: float, start_temp: float):
+          """Create a thermal mass with the given properties.
+
+          Parameters
+          ----------
+          mass       : The body's mass in kilograms.
+          cp         : The body's specific heat capacity in J/K/kg.
+          start_temp : The body's starting temperature, in Kelvin.
+          """
+          self._mass = mass
+          self._cp = cp
+          self._temp = start_temp
+
+
+      def current_temperature(self) -> float:
+          """Get the current temperature of the body."""
+          return self._temp
+
+
+      def update(self, heat_in: float, heat_out: float):
+          """Update the body state given a certain heat input and output.
+
+          Parameters
+          ----------
+          heat_in  : The amount of heat added to the body in Joules.
+          heat_out : The amount of heat removed from the body in Joules.
+          """
+          d_q = heat_in - heat_out
+          # We find the change in temperature by taking the change in heat and scaling it by the
+          # body's heat capacity.
+          self._temp += d_q / (self._mass * self._cp)
+#+end_src
+
+Next, we create a test harness which will manage the bookkeeping of the flows and integrate our
+controller.
+
+#+name: thermal-fixture
+#+begin_src python
+  from typing import Callable, Iterable, Tuple, List
+
+  class ThermalSystem():
+
+      def __init__(self,
+                   mass: ThermalMass,
+                   in_flow: Callable[[int], float],
+                   out_flow: Callable[[int], float]):
+          """Create a simple thermal system with the given mass and flow functions.
+
+          Parameters
+          ----------
+          mass     : A thermal mass to use as the system's body of interest.
+          in_flow  : The heat flow rate (in J/s) into the body as a function of time.
+          out_flow : The heat flow rate (in J/s) out of the body as a function of time.
+          """
+          self._mass = mass
+          self._in_flow = in_flow
+          self._out_flow = out_flow
+
+
+      def simulate(self, timesteps: Iterable[int]) -> List[Tuple[int, float, float, float]]:
+          """Simulate the system behavior over time, and give a state trace.
+
+          This function runs the system state forward using the given timestep
+          sequence. At each time point it computes input and output heat flows,
+          updates the thermal mass, and records a datapoint for the output trace.
+          The trace consists of a sequence of tuples, one for each time point,
+          containing the time value, the temperature, and the instantaneous heat
+          flow in and out values at that time.
+
+          Parameters
+          ----------
+          timesteps : A monotonically increasing sequence of timepoints.
+
+          """
+          trace = []
+          it = timesteps.__iter__()
+          last_t = it.__next__()
+          flow_in = self._in_flow(last_t)
+          flow_out = self._out_flow(last_t)
+
+          trace.append((last_t, self._mass.current_temperature(), flow_in, flow_out))
+
+          for t in it:
+              dt = t - last_t
+              heat_in = flow_in * dt
+              heat_out = flow_out * dt
+
+              self._mass.update(heat_in, heat_out)
+
+              flow_in = self._in_flow(t)
+              flow_out = self._out_flow(t)
+              trace.append((t, self._mass.current_temperature(), flow_in, flow_out))
+
+          return trace
+#+end_src
+
+#+name: thermal-full
+#+begin_src python :tangle thermal.py :exports none :noweb yes
+  <<mass-class>>
+
+  <<thermal-fixture>>
+#+end_src
+
+** Graphical Fixture
+
+To help understand the behavior of our system, we can a scenario and plot the resulting system state
+over time. To do so we'll define a helper class which takes care of plotting the state trace.
+
+#+name: graphical-fixture-class
+#+begin_src python :noweb yes
+  import csv
+  import subprocess
+  import sys
+
+  from string import Template
+  from thermal import ThermalSystem
+  from typing import Iterable
+
+
+  class GraphicalFixture():
+
+      GNUPLOT_TEMPLATE = Template("""
+      <<gnuplot-template>>
+      """)
+
+      def __init__(self, name: str, system: ThermalSystem):
+          self._name = name
+          self._system = system
+
+
+      def simulate(self, timesteps: Iterable[int]) -> str:
+          """Run the simulation over the given timesteps and plot the state.
+
+          Returns a filename containing the state plot.
+          """
+          trace = self._system.simulate(timesteps)
+          csvfile = f"traces/{self._name}.csv"
+          with open(csvfile, "w", newline='') as csvf:
+              csvf.write("t,temp,flow-in,flow-out\n")
+              csv.writer(csvf).writerows(trace)
+
+          pngfile = f"img/{self._name}.png"
+
+          gpfile = f"traces/{self._name}.gp"
+          with open(gpfile, "w") as gpf:
+              gpf.write(self.GNUPLOT_TEMPLATE.substitute(input_file=csvfile,
+                                                         output_file=pngfile))
+
+          subprocess.run(["/usr/local/bin/gnuplot", gpfile],
+                         stdout=sys.stdout,
+                         stderr=sys.stderr,
+                         check=True)
+
+
+          return pngfile
+#+end_src
+
+To plot our system state we'll rely on GNUplot. Our template reads the CSV file and plots the
+temperature and flows over time, with two Y axis scales to help keep things similarly sized.
+
+#+name: gnuplot-template
+#+begin_src gnuplot
+  # set terminal dumb
+  set term png
+  set output "$output_file"
+
+  set datafile separator ","
+
+  set timefmt '%S'
+  set format x "%S"
+  set xdata time
+
+  set key autotitle columnhead
+  set xlabel 'Time'
+
+  set ylabel "Temperature" 
+
+  set y2tics
+  set ytics nomirror
+  set y2label "Flow"
+
+  set title "System State"
+
+  plot "$input_file" using 1:2 with lines, '' using 1:3 with lines axis x1y2, '' using 1:4 with lines axis x1y2
+#+end_src
+
+#+name: graphical-fixture
+#+begin_src python :tangle fixture.py :exports none :noweb yes
+  <<graphical-fixture-class>>
+#+end_src
+
+* Scenarios
+
+To start, let's test a simple scenario where the system is in perfect equilibrium. We should see
+that the flows balance each other out and the system temperature remains the same over time.
+
+#+name: equilibrium-scenario
+#+begin_src python :tangle equilibrium.py :results file link :file equilibrium.png :output-dir img/
+  import fixture
+  import thermal
+
+  # Our mass is approximately equivalent to a liter of water at room temperature.
+  mass = thermal.ThermalMass(1.0, 4000, 293.15)
+  in_flow = lambda t: 1000.0 # 1 kJ/s
+  out_flow = lambda t: 1000.0 # 1 kJ/s
+  system = thermal.ThermalSystem(mass, in_flow, out_flow)
+  f = fixture.GraphicalFixture("equilibrium", system)
+  f.simulate(range(0, 100))
+#+end_src
+
+#+RESULTS: equilibrium-scenario
+[[file:img/equilibrium.png]]
