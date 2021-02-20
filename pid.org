@@ -350,22 +350,36 @@ temperature and flows over time, with two Y axis scales to help keep things simi
   set format x "%S"
   set xdata time
 
-  set key autotitle columnhead
+  set key noautotitle
   set xlabel 'Time'
 
-  set ylabel "Temperature" 
+  set style line 101 lw 2 lt rgb "#ba0306"
+  set style line 102 lw 2 lt rgb "#aaaaaa"
+  set style line 103 lw 2 lt rgb "#2e2e2e"
 
-  set y2tics
-  set ytics nomirror
-  set y2label "Flow"
+  set style line 11 lc rgb '#808080' lt 1
+  set border 3 back ls 11
+  set tics nomirror
 
-  set style line 101 lw 3 lt rgb "#ba0306"
-  set style line 102 lw 2 lt rgb "#5e5e5e"
-  set style line 103 lw 2 lt rgb "#aaaaaa"
+  set ytics scale 0.5 10
 
-  set title "System Temperature"
+  set multiplot layout 3,1 rowsfirst
 
-  plot "$input_file" using 1:2 with lines ls 101, '' using 1:3 with lines axis x1y2 ls 102, '' using 1:4 with lines axis x1y2 ls 103
+  set title "Input"
+  set ylabel "Flow Rate"
+  plot "$input_file" using 1:3 with lines ls 102
+
+  set title "System State"
+  set ylabel "Temperature"
+  plot "$input_file" using 1:2 with lines ls 101
+
+  set title "Control"
+  set ylabel "Flow Rate"
+  plot "$input_file" using 1:4 with lines ls 103
+
+  unset multiplot
+
+  #plot "$input_file" using 1:2 with lines ls 101, '' using 1:3 with lines axis x1y2 ls 102, '' using 1:4 with lines axis x1y2 ls 103
 #+end_src
 
 #+RESULTS: gnuplot-template
@@ -590,35 +604,7 @@ how it does.
 This is a lot better than the previous example, where our output signal was also random. The system
 state remains within tighter bounds and does not increase or decrease as dramatically. While there
 is still quite a bit of noise in the system, it is obvious that our controller is doing a decent
-job. If we decrease the noise gain, do we do better?
-
-#+name: pid-random-low-scenario
-#+begin_src python :tangle pid_random_low.py :results file link :file pid_random_low.png :output-dir img/ :exports both
-  import fixture
-  import thermal
-  from pid_controller import PidController
-
-  import random
-
-  random.seed(a=1613837227)
-
-  ROOM_TEMP = 293.15
-
-  controller = PidController(1.0, 0.2, 0.1, ROOM_TEMP, ROOM_TEMP, 0)
-
-  mass = thermal.ThermalMass(1.0, 4000, ROOM_TEMP)
-  in_flow = lambda t: 100 * random.random()
-  out_flow = lambda t, s: controller.next(t, s) * 1000
-  system = thermal.ThermalSystem(mass, in_flow, out_flow)
-  f = fixture.GraphicalFixture("pid_random_low", system)
-  f.simulate(range(0, 100))
-#+end_src
-
-#+RESULTS: pid-random-low-scenario
-[[file:img/pid_random_low.png]]
-
-Yes! If you're having trouble seeing the difference, look at the axis scales. Our error has gone
-down proportionally with the noise gain.
+job.
 
 One of the keys to getting good performance from a PID controller is to tune the parameters. How can
 we adjust the gains in our controller to get better performance? Let's try bumping up the $K_p$ term
@@ -634,11 +620,11 @@ to see if we can drive down the oscillations somewhat.
 
   random.seed(a=1613837227)
 
-  ROOM_TEMP = 293.15
+  TARGET_TEMP = 0
 
-  controller = PidController(5.0, 0.8, 0.5, ROOM_TEMP, ROOM_TEMP, 0)
+  controller = PidController(5.0, 0.8, 0.5, TARGET_TEMP, TARGET_TEMP, 0)
 
-  mass = thermal.ThermalMass(1.0, 4000, ROOM_TEMP)
+  mass = thermal.ThermalMass(1.0, 4000, TARGET_TEMP)
   in_flow = lambda t: 100 * random.random()
   out_flow = lambda t, s: controller.next(t, s) * 1000
   system = thermal.ThermalSystem(mass, in_flow, out_flow)
