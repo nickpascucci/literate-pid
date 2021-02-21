@@ -3,7 +3,7 @@
 "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
-<!-- 2021-02-21 Sun 21:48 -->
+<!-- 2021-02-21 Sun 22:03 -->
 <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>A Python PID Controller</title>
@@ -270,24 +270,24 @@ for the JavaScript code in this tag.
 <h2>Table of Contents</h2>
 <div id="text-table-of-contents">
 <ul>
-<li><a href="#orgdc0a048">1. Introduction</a></li>
-<li><a href="#org00596da">2. Theory</a></li>
-<li><a href="#org96ea8a7">3. Test Harness</a>
+<li><a href="#orgde0f85b">1. Introduction</a></li>
+<li><a href="#org91dc40e">2. Theory</a></li>
+<li><a href="#org4eaa78f">3. Test Harness</a>
 <ul>
-<li><a href="#org60e2cf0">3.1. Graphical Fixture</a></li>
+<li><a href="#org15bfbcf">3.1. Graphical Fixture</a></li>
 </ul>
 </li>
-<li><a href="#org1fa6f8b">4. Scenarios</a>
+<li><a href="#orga2c06da">4. Scenarios</a>
 <ul>
-<li><a href="#org690decd">4.1. Testing the PID controller</a></li>
+<li><a href="#org6e24c8f">4.1. Testing the PID controller</a></li>
 </ul>
 </li>
 </ul>
 </div>
 </div>
 
-<div id="outline-container-orgdc0a048" class="outline-2">
-<h2 id="orgdc0a048"><span class="section-number-2">1</span> Introduction</h2>
+<div id="outline-container-orgde0f85b" class="outline-2">
+<h2 id="orgde0f85b"><span class="section-number-2">1</span> Introduction</h2>
 <div class="outline-text-2" id="text-1">
 <p>
 I've recently built a NAS using a Raspberry Pi 4. The Pi 4 is a more powerful board than previous
@@ -306,6 +306,12 @@ thermal cycling in the system. Additionally, the fan coming on at full blast for
 10 minutes is somewhat irritating.
 </p>
 
+
+<div class="figure">
+<p><a href="img/bang_bang.png"><img src="file:///Users/nick/dev/pid/img/bang_bang.png" alt="bang_bang.png" /></a>
+</p>
+</div>
+
 <p>
 Fortunately we can do better! The sections below outline the basic theory of a more sophisticated
 <i>PID controller</i>, and provide a Python implementation we can play with in a test environment.
@@ -313,8 +319,8 @@ Fortunately we can do better! The sections below outline the basic theory of a m
 </div>
 </div>
 
-<div id="outline-container-org00596da" class="outline-2">
-<h2 id="org00596da"><span class="section-number-2">2</span> Theory</h2>
+<div id="outline-container-org91dc40e" class="outline-2">
+<h2 id="org91dc40e"><span class="section-number-2">2</span> Theory</h2>
 <div class="outline-text-2" id="text-2">
 <p>
 A PID controller combines three terms to create a control signal: a <i>proportional</i> term, which
@@ -335,7 +341,7 @@ rough pass at the pseudo code we might imagine something like this:
 </p>
 
 <div class="org-src-container">
-<pre class="src src-python" id="org1954e1f"><span style="color: #8D8D84;"># </span><span style="color: #8D8D84; font-style: italic;">Create the PID controller object with specific gains.</span>
+<pre class="src src-python" id="org4d6e3a5"><span style="color: #8D8D84;"># </span><span style="color: #8D8D84; font-style: italic;">Create the PID controller object with specific gains.</span>
 <span style="color: #BA36A5;">controller</span> = PidController<span style="color: #707183;">(</span>kp, ki, kd<span style="color: #707183;">)</span>
 controller.set_target<span style="color: #707183;">(</span>target<span style="color: #707183;">)</span>
 
@@ -369,7 +375,7 @@ and timestamp in addition to the gains.
 </p>
 
 <div class="org-src-container">
-<pre class="src src-python" id="org3031749"><span style="color: #0000FF;">class</span> <span style="color: #6434A3;">PidController</span><span style="color: #707183;">()</span>:
+<pre class="src src-python" id="orgd68e17f"><span style="color: #0000FF;">class</span> <span style="color: #6434A3;">PidController</span><span style="color: #707183;">()</span>:
     <span style="color: #036A07;">"""A classical PID controller which maintains state between calls.</span>
 
 <span style="color: #036A07;">    This class is intended to be integrated into an external control loop. It</span>
@@ -418,7 +424,7 @@ are necessary for computing the I and D terms.
 </p>
 
 <div class="org-src-container">
-<pre class="src src-python" id="orgfbe4f88"><span style="color: #0000FF;">def</span> <span style="color: #006699;">next</span><span style="color: #707183;">(</span><span style="color: #0000FF;">self</span>, t: <span style="color: #006FE0; font-weight: bold;">int</span>, state: <span style="color: #006FE0; font-weight: bold;">float</span><span style="color: #707183;">)</span> -&gt; <span style="color: #006FE0; font-weight: bold;">float</span>:
+<pre class="src src-python" id="org2fd649a"><span style="color: #0000FF;">def</span> <span style="color: #006699;">next</span><span style="color: #707183;">(</span><span style="color: #0000FF;">self</span>, t: <span style="color: #006FE0; font-weight: bold;">int</span>, state: <span style="color: #006FE0; font-weight: bold;">float</span><span style="color: #707183;">)</span> -&gt; <span style="color: #006FE0; font-weight: bold;">float</span>:
     <span style="color: #036A07;">"""Incorporate a sample of the state at time t and produce a control value.</span>
 
 <span style="color: #036A07;">    Because the controller is stateful, calls to this method should be</span>
@@ -453,7 +459,7 @@ better approximation than a piecewise constant function, but still an approximat
 </p>
 
 <div class="org-src-container">
-<pre class="src src-python" id="org709c0d1"><span style="color: #0000FF;">def</span> <span style="color: #006699;">_proportional</span><span style="color: #707183;">(</span><span style="color: #0000FF;">self</span>, error: <span style="color: #006FE0; font-weight: bold;">float</span><span style="color: #707183;">)</span> -&gt; <span style="color: #006FE0; font-weight: bold;">float</span>:
+<pre class="src src-python" id="orgd6fb138"><span style="color: #0000FF;">def</span> <span style="color: #006699;">_proportional</span><span style="color: #707183;">(</span><span style="color: #0000FF;">self</span>, error: <span style="color: #006FE0; font-weight: bold;">float</span><span style="color: #707183;">)</span> -&gt; <span style="color: #006FE0; font-weight: bold;">float</span>:
     <span style="color: #0000FF;">return</span> <span style="color: #0000FF;">self</span>._kp * error
 
 
@@ -477,8 +483,8 @@ better approximation than a piecewise constant function, but still an approximat
 </div>
 </div>
 
-<div id="outline-container-org96ea8a7" class="outline-2">
-<h2 id="org96ea8a7"><span class="section-number-2">3</span> Test Harness</h2>
+<div id="outline-container-org4eaa78f" class="outline-2">
+<h2 id="org4eaa78f"><span class="section-number-2">3</span> Test Harness</h2>
 <div class="outline-text-2" id="text-3">
 <p>
 To test the controller we need a simulated system to control. A canonical example often used to
@@ -510,7 +516,7 @@ mass itself, independently of any thermal flows.
 </p>
 
 <div class="org-src-container">
-<pre class="src src-python" id="orgd2f31ec"><span style="color: #0000FF;">class</span> <span style="color: #6434A3;">ThermalMass</span><span style="color: #707183;">()</span>:
+<pre class="src src-python" id="orga4ad205"><span style="color: #0000FF;">class</span> <span style="color: #6434A3;">ThermalMass</span><span style="color: #707183;">()</span>:
 
     <span style="color: #0000FF;">def</span> <span style="color: #006699;">__init__</span><span style="color: #707183;">(</span><span style="color: #0000FF;">self</span>, mass: <span style="color: #006FE0; font-weight: bold;">float</span>, cp: <span style="color: #006FE0; font-weight: bold;">float</span>, start_temp: <span style="color: #006FE0; font-weight: bold;">float</span><span style="color: #707183;">)</span>:
         <span style="color: #036A07;">"""Create a thermal mass with the given properties.</span>
@@ -552,7 +558,7 @@ integrate our controller.
 </p>
 
 <div class="org-src-container">
-<pre class="src src-python" id="org06347e4"><span style="color: #0000FF;">from</span> typing <span style="color: #0000FF;">import</span> Callable, Iterable, Tuple, List
+<pre class="src src-python" id="org7571812"><span style="color: #0000FF;">from</span> typing <span style="color: #0000FF;">import</span> Callable, Iterable, Tuple, List
 
 <span style="color: #0000FF;">class</span> <span style="color: #6434A3;">ThermalSystem</span><span style="color: #707183;">()</span>:
 
@@ -616,8 +622,8 @@ integrate our controller.
 </div>
 </div>
 
-<div id="outline-container-org60e2cf0" class="outline-3">
-<h3 id="org60e2cf0"><span class="section-number-3">3.1</span> Graphical Fixture</h3>
+<div id="outline-container-org15bfbcf" class="outline-3">
+<h3 id="org15bfbcf"><span class="section-number-3">3.1</span> Graphical Fixture</h3>
 <div class="outline-text-3" id="text-3-1">
 <p>
 To help understand the behavior of our system we can model a scenario and plot the resulting system
@@ -625,13 +631,13 @@ state over time. Let's go ahead define a helper class which takes care of plotti
 </p>
 
 <div class="org-src-container">
-<pre class="src src-python" id="orgfaded6b"><span style="color: #0000FF;">import</span> csv
+<pre class="src src-python" id="orge755b0a"><span style="color: #0000FF;">import</span> csv
 <span style="color: #0000FF;">import</span> subprocess
 <span style="color: #0000FF;">import</span> sys
 
 <span style="color: #0000FF;">from</span> string <span style="color: #0000FF;">import</span> Template
 <span style="color: #0000FF;">from</span> thermal <span style="color: #0000FF;">import</span> ThermalSystem
-<span style="color: #0000FF;">from</span> typing <span style="color: #0000FF;">import</span> Iterable
+<span style="color: #0000FF;">from</span> typing <span style="color: #0000FF;">import</span> Iterable, Tuple
 
 
 <span style="color: #0000FF;">class</span> <span style="color: #6434A3;">GraphicalFixture</span><span style="color: #707183;">()</span>:
@@ -685,7 +691,7 @@ state over time. Let's go ahead define a helper class which takes care of plotti
 
     <span style="color: #0000FF;">def</span> <span style="color: #006699;">simulate</span><span style="color: #707183;">(</span><span style="color: #0000FF;">self</span>,
                  timesteps: Iterable<span style="color: #7388D6;">[</span><span style="color: #006FE0; font-weight: bold;">int</span><span style="color: #7388D6;">]</span>,
-                 y_scales: Tuple<span style="color: #7388D6;">[</span><span style="color: #006FE0; font-weight: bold;">int</span>, <span style="color: #006FE0; font-weight: bold;">int</span>, <span style="color: #006FE0; font-weight: bold;">int</span><span style="color: #7388D6;">]</span> = <span style="color: #7388D6;">(</span>20, 2, 20<span style="color: #7388D6;">)</span><span style="color: #707183;">)</span> -&gt; <span style="color: #006FE0; font-weight: bold;">str</span>:
+                 y_scales: Tuple<span style="color: #7388D6;">[</span><span style="color: #006FE0; font-weight: bold;">int</span>, <span style="color: #006FE0; font-weight: bold;">int</span>, <span style="color: #006FE0; font-weight: bold;">int</span><span style="color: #7388D6;">]</span> = <span style="color: #7388D6;">(</span>10, 1, 20<span style="color: #7388D6;">)</span><span style="color: #707183;">)</span> -&gt; <span style="color: #006FE0; font-weight: bold;">str</span>:
         <span style="color: #036A07;">"""Run the simulation over the given timesteps and plot the state.</span>
 
 <span style="color: #036A07;">        Returns a filename containing the state plot.</span>
@@ -724,8 +730,8 @@ temperature and flows over time, with two Y axis scales to help keep things simi
 </div>
 </div>
 
-<div id="outline-container-org1fa6f8b" class="outline-2">
-<h2 id="org1fa6f8b"><span class="section-number-2">4</span> Scenarios</h2>
+<div id="outline-container-orga2c06da" class="outline-2">
+<h2 id="orga2c06da"><span class="section-number-2">4</span> Scenarios</h2>
 <div class="outline-text-2" id="text-4">
 <p>
 As a starting point let's test a simple scenario where the system is in perfect equilibrium. We
@@ -734,7 +740,7 @@ time.
 </p>
 
 <div class="org-src-container">
-<pre class="src src-python" id="org16626dc"><span style="color: #0000FF;">import</span> fixture
+<pre class="src src-python" id="org8bb29c6"><span style="color: #0000FF;">import</span> fixture
 <span style="color: #0000FF;">import</span> thermal
 
 <span style="color: #8D8D84;"># </span><span style="color: #8D8D84; font-style: italic;">Our mass is approximately equivalent to a liter of water at room temperature.</span>
@@ -763,7 +769,7 @@ A (slightly) more complex example may have a thermal runaway, when the input exc
 </p>
 
 <div class="org-src-container">
-<pre class="src src-python" id="orgff58ecf"><span style="color: #0000FF;">import</span> fixture
+<pre class="src src-python" id="org612712c"><span style="color: #0000FF;">import</span> fixture
 <span style="color: #0000FF;">import</span> thermal
 
 <span style="color: #8D8D84;"># </span><span style="color: #8D8D84; font-style: italic;">Our mass is approximately equivalent to a liter of water at room temperature.</span>
@@ -788,7 +794,7 @@ We could also consider a random input, and how it may perturb the system.
 </p>
 
 <div class="org-src-container">
-<pre class="src src-python" id="orgc631dcc"><span style="color: #0000FF;">import</span> fixture
+<pre class="src src-python" id="org28ff461"><span style="color: #0000FF;">import</span> fixture
 <span style="color: #0000FF;">import</span> thermal
 <span style="color: #0000FF;">import</span> random
 
@@ -800,7 +806,7 @@ random.seed<span style="color: #707183;">(</span>a=1613837227<span style="color:
 <span style="color: #BA36A5;">out_flow</span> = <span style="color: #0000FF;">lambda</span> t, s: 100 * random.random<span style="color: #707183;">()</span>
 <span style="color: #BA36A5;">system</span> = thermal.ThermalSystem<span style="color: #707183;">(</span>mass, in_flow, out_flow<span style="color: #707183;">)</span>
 <span style="color: #BA36A5;">f</span> = fixture.GraphicalFixture<span style="color: #707183;">(</span><span style="color: #008000;">"random"</span>, system<span style="color: #707183;">)</span>
-f.simulate<span style="color: #707183;">(</span><span style="color: #006FE0; font-weight: bold;">range</span><span style="color: #7388D6;">(</span>0, 100<span style="color: #7388D6;">)</span><span style="color: #707183;">)</span>
+f.simulate<span style="color: #707183;">(</span><span style="color: #006FE0; font-weight: bold;">range</span><span style="color: #7388D6;">(</span>0, 100<span style="color: #7388D6;">)</span>, y_scales=<span style="color: #7388D6;">(</span>20, 1, 20<span style="color: #7388D6;">)</span><span style="color: #707183;">)</span>
 </pre>
 </div>
 
@@ -817,8 +823,8 @@ loop.
 </p>
 </div>
 
-<div id="outline-container-org690decd" class="outline-3">
-<h3 id="org690decd"><span class="section-number-3">4.1</span> Testing the PID controller</h3>
+<div id="outline-container-org6e24c8f" class="outline-3">
+<h3 id="org6e24c8f"><span class="section-number-3">4.1</span> Testing the PID controller</h3>
 <div class="outline-text-3" id="text-4-1">
 <p>
 With the test harness defined and a few basic scenarios under our belts, it's time to consider
@@ -828,7 +834,7 @@ a corresponding undershoot, and finally a settling into steady-state as the cont
 </p>
 
 <div class="org-src-container">
-<pre class="src src-python" id="org0f44c0b"><span style="color: #0000FF;">import</span> fixture
+<pre class="src src-python" id="org8d3ec06"><span style="color: #0000FF;">import</span> fixture
 <span style="color: #0000FF;">import</span> thermal
 <span style="color: #0000FF;">from</span> pid_controller <span style="color: #0000FF;">import</span> PidController
 
@@ -842,7 +848,7 @@ a corresponding undershoot, and finally a settling into steady-state as the cont
 <span style="color: #BA36A5;">out_flow</span> = <span style="color: #0000FF;">lambda</span> t, s: controller.<span style="color: #006FE0; font-weight: bold;">next</span><span style="color: #707183;">(</span>t, s<span style="color: #707183;">)</span> * 100
 <span style="color: #BA36A5;">system</span> = thermal.ThermalSystem<span style="color: #707183;">(</span>mass, in_flow, out_flow<span style="color: #707183;">)</span>
 <span style="color: #BA36A5;">f</span> = fixture.GraphicalFixture<span style="color: #707183;">(</span><span style="color: #008000;">"pid_linear"</span>, system<span style="color: #707183;">)</span>
-f.simulate<span style="color: #707183;">(</span><span style="color: #006FE0; font-weight: bold;">range</span><span style="color: #7388D6;">(</span>0, 100<span style="color: #7388D6;">)</span><span style="color: #707183;">)</span>
+f.simulate<span style="color: #707183;">(</span><span style="color: #006FE0; font-weight: bold;">range</span><span style="color: #7388D6;">(</span>0, 100<span style="color: #7388D6;">)</span>, y_scales=<span style="color: #7388D6;">(</span>1, 1, 40<span style="color: #7388D6;">)</span><span style="color: #707183;">)</span>
 </pre>
 </div>
 
@@ -859,7 +865,7 @@ eliminating the higher-order terms entirely.
 </p>
 
 <div class="org-src-container">
-<pre class="src src-python" id="org8a9709e"><span style="color: #0000FF;">import</span> fixture
+<pre class="src src-python" id="orgf852975"><span style="color: #0000FF;">import</span> fixture
 <span style="color: #0000FF;">import</span> thermal
 <span style="color: #0000FF;">from</span> pid_controller <span style="color: #0000FF;">import</span> PidController
 
@@ -891,7 +897,7 @@ information. What happens if we run the system with only an integral term?
 </p>
 
 <div class="org-src-container">
-<pre class="src src-python" id="org3f873e8"><span style="color: #0000FF;">import</span> fixture
+<pre class="src src-python" id="org6dd1fe6"><span style="color: #0000FF;">import</span> fixture
 <span style="color: #0000FF;">import</span> thermal
 <span style="color: #0000FF;">from</span> pid_controller <span style="color: #0000FF;">import</span> PidController
 
@@ -904,7 +910,7 @@ information. What happens if we run the system with only an integral term?
 <span style="color: #BA36A5;">out_flow</span> = <span style="color: #0000FF;">lambda</span> t, s: controller.<span style="color: #006FE0; font-weight: bold;">next</span><span style="color: #707183;">(</span>t, s<span style="color: #707183;">)</span> * 100
 <span style="color: #BA36A5;">system</span> = thermal.ThermalSystem<span style="color: #707183;">(</span>mass, in_flow, out_flow<span style="color: #707183;">)</span>
 <span style="color: #BA36A5;">f</span> = fixture.GraphicalFixture<span style="color: #707183;">(</span><span style="color: #008000;">"pid_i_only"</span>, system<span style="color: #707183;">)</span>
-f.simulate<span style="color: #707183;">(</span><span style="color: #006FE0; font-weight: bold;">range</span><span style="color: #7388D6;">(</span>0, 100<span style="color: #7388D6;">)</span><span style="color: #707183;">)</span>
+f.simulate<span style="color: #707183;">(</span><span style="color: #006FE0; font-weight: bold;">range</span><span style="color: #7388D6;">(</span>0, 100<span style="color: #7388D6;">)</span>, y_scales=<span style="color: #7388D6;">(</span>1, 1, 100<span style="color: #7388D6;">)</span><span style="color: #707183;">)</span>
 </pre>
 </div>
 
@@ -925,7 +931,7 @@ Lastly, let's try turning on only the derivative term.
 </p>
 
 <div class="org-src-container">
-<pre class="src src-python" id="orgd4ea411"><span style="color: #0000FF;">import</span> fixture
+<pre class="src src-python" id="org8a13bff"><span style="color: #0000FF;">import</span> fixture
 <span style="color: #0000FF;">import</span> thermal
 <span style="color: #0000FF;">from</span> pid_controller <span style="color: #0000FF;">import</span> PidController
 
@@ -938,7 +944,7 @@ Lastly, let's try turning on only the derivative term.
 <span style="color: #BA36A5;">out_flow</span> = <span style="color: #0000FF;">lambda</span> t, s: controller.<span style="color: #006FE0; font-weight: bold;">next</span><span style="color: #707183;">(</span>t, s<span style="color: #707183;">)</span> * 100
 <span style="color: #BA36A5;">system</span> = thermal.ThermalSystem<span style="color: #707183;">(</span>mass, in_flow, out_flow<span style="color: #707183;">)</span>
 <span style="color: #BA36A5;">f</span> = fixture.GraphicalFixture<span style="color: #707183;">(</span><span style="color: #008000;">"pid_d_only"</span>, system<span style="color: #707183;">)</span>
-f.simulate<span style="color: #707183;">(</span><span style="color: #006FE0; font-weight: bold;">range</span><span style="color: #7388D6;">(</span>0, 100<span style="color: #7388D6;">)</span><span style="color: #707183;">)</span>
+f.simulate<span style="color: #707183;">(</span><span style="color: #006FE0; font-weight: bold;">range</span><span style="color: #7388D6;">(</span>0, 100<span style="color: #7388D6;">)</span>, y_scales=<span style="color: #7388D6;">(</span>1, 1, 5<span style="color: #7388D6;">)</span><span style="color: #707183;">)</span>
 </pre>
 </div>
 
@@ -956,7 +962,7 @@ is effectively left behind.
 </p>
 
 <p>
-So, what does this show us about how these terms relate? As I outlined in the <a href="#org00596da">Theory section</a>:
+So, what does this show us about how these terms relate? As I outlined in the <a href="#org91dc40e">Theory section</a>:
 </p>
 
 <ul class="org-ul">
@@ -979,7 +985,7 @@ how it does.
 </p>
 
 <div class="org-src-container">
-<pre class="src src-python" id="orgb5177fc"><span style="color: #0000FF;">import</span> fixture
+<pre class="src src-python" id="org562d2db"><span style="color: #0000FF;">import</span> fixture
 <span style="color: #0000FF;">import</span> thermal
 <span style="color: #0000FF;">from</span> pid_controller <span style="color: #0000FF;">import</span> PidController
 
@@ -995,7 +1001,7 @@ random.seed<span style="color: #707183;">(</span>a=1613837227<span style="color:
 <span style="color: #BA36A5;">out_flow</span> = <span style="color: #0000FF;">lambda</span> t, s: controller.<span style="color: #006FE0; font-weight: bold;">next</span><span style="color: #707183;">(</span>t, s<span style="color: #707183;">)</span> * 10
 <span style="color: #BA36A5;">system</span> = thermal.ThermalSystem<span style="color: #707183;">(</span>mass, in_flow, out_flow<span style="color: #707183;">)</span>
 <span style="color: #BA36A5;">f</span> = fixture.GraphicalFixture<span style="color: #707183;">(</span><span style="color: #008000;">"pid_random"</span>, system<span style="color: #707183;">)</span>
-f.simulate<span style="color: #707183;">(</span><span style="color: #006FE0; font-weight: bold;">range</span><span style="color: #7388D6;">(</span>0, 100<span style="color: #7388D6;">)</span><span style="color: #707183;">)</span>
+f.simulate<span style="color: #707183;">(</span><span style="color: #006FE0; font-weight: bold;">range</span><span style="color: #7388D6;">(</span>0, 100<span style="color: #7388D6;">)</span>, y_scales=<span style="color: #7388D6;">(</span>20, 1, 20<span style="color: #7388D6;">)</span><span style="color: #707183;">)</span>
 </pre>
 </div>
 
@@ -1020,7 +1026,7 @@ to see if we can drive down the oscillations somewhat.
 </p>
 
 <div class="org-src-container">
-<pre class="src src-python" id="orga97dba6"><span style="color: #0000FF;">import</span> fixture
+<pre class="src src-python" id="orgfda1268"><span style="color: #0000FF;">import</span> fixture
 <span style="color: #0000FF;">import</span> thermal
 <span style="color: #0000FF;">from</span> pid_controller <span style="color: #0000FF;">import</span> PidController
 
@@ -1037,7 +1043,7 @@ random.seed<span style="color: #707183;">(</span>a=1613837227<span style="color:
 <span style="color: #BA36A5;">out_flow</span> = <span style="color: #0000FF;">lambda</span> t, s: controller.<span style="color: #006FE0; font-weight: bold;">next</span><span style="color: #707183;">(</span>t, s<span style="color: #707183;">)</span> * 10
 <span style="color: #BA36A5;">system</span> = thermal.ThermalSystem<span style="color: #707183;">(</span>mass, in_flow, out_flow<span style="color: #707183;">)</span>
 <span style="color: #BA36A5;">f</span> = fixture.GraphicalFixture<span style="color: #707183;">(</span><span style="color: #008000;">"pid_random_p"</span>, system<span style="color: #707183;">)</span>
-f.simulate<span style="color: #707183;">(</span><span style="color: #006FE0; font-weight: bold;">range</span><span style="color: #7388D6;">(</span>0, 100<span style="color: #7388D6;">)</span><span style="color: #707183;">)</span>
+f.simulate<span style="color: #707183;">(</span><span style="color: #006FE0; font-weight: bold;">range</span><span style="color: #7388D6;">(</span>0, 100<span style="color: #7388D6;">)</span>, y_scales=<span style="color: #7388D6;">(</span>20, 1, 20<span style="color: #7388D6;">)</span><span style="color: #707183;">)</span>
 </pre>
 </div>
 
@@ -1053,7 +1059,7 @@ Sorry, your browser does not support SVG.</object>
 </div>
 <div id="postamble" class="status">
 <p class="author">Author: Nick Pascucci</p>
-<p class="date">Created: 2021-02-21 Sun 21:48</p>
+<p class="date">Created: 2021-02-21 Sun 22:03</p>
 <p class="validation"><a href="http://validator.w3.org/check?uri=referer">Validate</a></p>
 </div>
 </body>

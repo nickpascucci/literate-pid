@@ -18,6 +18,8 @@ below another, lower threshold (55C). While this works reasonably well it does p
 thermal cycling in the system. Additionally, the fan coming on at full blast for a few seconds every
 10 minutes is somewhat irritating.
 
+[[file:img/bang_bang.png][file:~/dev/pid/img/bang_bang.png]]
+
 Fortunately we can do better! The sections below outline the basic theory of a more sophisticated
 /PID controller/, and provide a Python implementation we can play with in a test environment.
 
