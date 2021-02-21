@@ -1,1 +1,1016 @@
-/Users/nick/dev/pid/pid.html
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+<!-- 2021-02-21 Sun 10:46 -->
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>A Python PID Controller</title>
+<meta name="generator" content="Org mode" />
+<meta name="author" content="Nick Pascucci" />
+<style type="text/css">
+ <!--/*--><![CDATA[/*><!--*/
+  .title  { text-align: center;
+             margin-bottom: .2em; }
+  .subtitle { text-align: center;
+              font-size: medium;
+              font-weight: bold;
+              margin-top:0; }
+  .todo   { font-family: monospace; color: red; }
+  .done   { font-family: monospace; color: green; }
+  .priority { font-family: monospace; color: orange; }
+  .tag    { background-color: #eee; font-family: monospace;
+            padding: 2px; font-size: 80%; font-weight: normal; }
+  .timestamp { color: #bebebe; }
+  .timestamp-kwd { color: #5f9ea0; }
+  .org-right  { margin-left: auto; margin-right: 0px;  text-align: right; }
+  .org-left   { margin-left: 0px;  margin-right: auto; text-align: left; }
+  .org-center { margin-left: auto; margin-right: auto; text-align: center; }
+  .underline { text-decoration: underline; }
+  #postamble p, #preamble p { font-size: 90%; margin: .2em; }
+  p.verse { margin-left: 3%; }
+  pre {
+    border: 1px solid #ccc;
+    box-shadow: 3px 3px 3px #eee;
+    padding: 8pt;
+    font-family: monospace;
+    overflow: auto;
+    margin: 1.2em;
+  }
+  pre.src {
+    position: relative;
+    overflow: visible;
+    padding-top: 1.2em;
+  }
+  pre.src:before {
+    display: none;
+    position: absolute;
+    background-color: white;
+    top: -10px;
+    right: 10px;
+    padding: 3px;
+    border: 1px solid black;
+  }
+  pre.src:hover:before { display: inline;}
+  /* Languages per Org manual */
+  pre.src-asymptote:before { content: 'Asymptote'; }
+  pre.src-awk:before { content: 'Awk'; }
+  pre.src-C:before { content: 'C'; }
+  /* pre.src-C++ doesn't work in CSS */
+  pre.src-clojure:before { content: 'Clojure'; }
+  pre.src-css:before { content: 'CSS'; }
+  pre.src-D:before { content: 'D'; }
+  pre.src-ditaa:before { content: 'ditaa'; }
+  pre.src-dot:before { content: 'Graphviz'; }
+  pre.src-calc:before { content: 'Emacs Calc'; }
+  pre.src-emacs-lisp:before { content: 'Emacs Lisp'; }
+  pre.src-fortran:before { content: 'Fortran'; }
+  pre.src-gnuplot:before { content: 'gnuplot'; }
+  pre.src-haskell:before { content: 'Haskell'; }
+  pre.src-hledger:before { content: 'hledger'; }
+  pre.src-java:before { content: 'Java'; }
+  pre.src-js:before { content: 'Javascript'; }
+  pre.src-latex:before { content: 'LaTeX'; }
+  pre.src-ledger:before { content: 'Ledger'; }
+  pre.src-lisp:before { content: 'Lisp'; }
+  pre.src-lilypond:before { content: 'Lilypond'; }
+  pre.src-lua:before { content: 'Lua'; }
+  pre.src-matlab:before { content: 'MATLAB'; }
+  pre.src-mscgen:before { content: 'Mscgen'; }
+  pre.src-ocaml:before { content: 'Objective Caml'; }
+  pre.src-octave:before { content: 'Octave'; }
+  pre.src-org:before { content: 'Org mode'; }
+  pre.src-oz:before { content: 'OZ'; }
+  pre.src-plantuml:before { content: 'Plantuml'; }
+  pre.src-processing:before { content: 'Processing.js'; }
+  pre.src-python:before { content: 'Python'; }
+  pre.src-R:before { content: 'R'; }
+  pre.src-ruby:before { content: 'Ruby'; }
+  pre.src-sass:before { content: 'Sass'; }
+  pre.src-scheme:before { content: 'Scheme'; }
+  pre.src-screen:before { content: 'Gnu Screen'; }
+  pre.src-sed:before { content: 'Sed'; }
+  pre.src-sh:before { content: 'shell'; }
+  pre.src-sql:before { content: 'SQL'; }
+  pre.src-sqlite:before { content: 'SQLite'; }
+  /* additional languages in org.el's org-babel-load-languages alist */
+  pre.src-forth:before { content: 'Forth'; }
+  pre.src-io:before { content: 'IO'; }
+  pre.src-J:before { content: 'J'; }
+  pre.src-makefile:before { content: 'Makefile'; }
+  pre.src-maxima:before { content: 'Maxima'; }
+  pre.src-perl:before { content: 'Perl'; }
+  pre.src-picolisp:before { content: 'Pico Lisp'; }
+  pre.src-scala:before { content: 'Scala'; }
+  pre.src-shell:before { content: 'Shell Script'; }
+  pre.src-ebnf2ps:before { content: 'ebfn2ps'; }
+  /* additional language identifiers per "defun org-babel-execute"
+       in ob-*.el */
+  pre.src-cpp:before  { content: 'C++'; }
+  pre.src-abc:before  { content: 'ABC'; }
+  pre.src-coq:before  { content: 'Coq'; }
+  pre.src-groovy:before  { content: 'Groovy'; }
+  /* additional language identifiers from org-babel-shell-names in
+     ob-shell.el: ob-shell is the only babel language using a lambda to put
+     the execution function name together. */
+  pre.src-bash:before  { content: 'bash'; }
+  pre.src-csh:before  { content: 'csh'; }
+  pre.src-ash:before  { content: 'ash'; }
+  pre.src-dash:before  { content: 'dash'; }
+  pre.src-ksh:before  { content: 'ksh'; }
+  pre.src-mksh:before  { content: 'mksh'; }
+  pre.src-posh:before  { content: 'posh'; }
+  /* Additional Emacs modes also supported by the LaTeX listings package */
+  pre.src-ada:before { content: 'Ada'; }
+  pre.src-asm:before { content: 'Assembler'; }
+  pre.src-caml:before { content: 'Caml'; }
+  pre.src-delphi:before { content: 'Delphi'; }
+  pre.src-html:before { content: 'HTML'; }
+  pre.src-idl:before { content: 'IDL'; }
+  pre.src-mercury:before { content: 'Mercury'; }
+  pre.src-metapost:before { content: 'MetaPost'; }
+  pre.src-modula-2:before { content: 'Modula-2'; }
+  pre.src-pascal:before { content: 'Pascal'; }
+  pre.src-ps:before { content: 'PostScript'; }
+  pre.src-prolog:before { content: 'Prolog'; }
+  pre.src-simula:before { content: 'Simula'; }
+  pre.src-tcl:before { content: 'tcl'; }
+  pre.src-tex:before { content: 'TeX'; }
+  pre.src-plain-tex:before { content: 'Plain TeX'; }
+  pre.src-verilog:before { content: 'Verilog'; }
+  pre.src-vhdl:before { content: 'VHDL'; }
+  pre.src-xml:before { content: 'XML'; }
+  pre.src-nxml:before { content: 'XML'; }
+  /* add a generic configuration mode; LaTeX export needs an additional
+     (add-to-list 'org-latex-listings-langs '(conf " ")) in .emacs */
+  pre.src-conf:before { content: 'Configuration File'; }
+
+  table { border-collapse:collapse; }
+  caption.t-above { caption-side: top; }
+  caption.t-bottom { caption-side: bottom; }
+  td, th { vertical-align:top;  }
+  th.org-right  { text-align: center;  }
+  th.org-left   { text-align: center;   }
+  th.org-center { text-align: center; }
+  td.org-right  { text-align: right;  }
+  td.org-left   { text-align: left;   }
+  td.org-center { text-align: center; }
+  dt { font-weight: bold; }
+  .footpara { display: inline; }
+  .footdef  { margin-bottom: 1em; }
+  .figure { padding: 1em; }
+  .figure p { text-align: center; }
+  .equation-container {
+    display: table;
+    text-align: center;
+    width: 100%;
+  }
+  .equation {
+    vertical-align: middle;
+  }
+  .equation-label {
+    display: table-cell;
+    text-align: right;
+    vertical-align: middle;
+  }
+  .inlinetask {
+    padding: 10px;
+    border: 2px solid gray;
+    margin: 10px;
+    background: #ffffcc;
+  }
+  #org-div-home-and-up
+   { text-align: right; font-size: 70%; white-space: nowrap; }
+  textarea { overflow-x: auto; }
+  .linenr { font-size: smaller }
+  .code-highlighted { background-color: #ffff00; }
+  .org-info-js_info-navigation { border-style: none; }
+  #org-info-js_console-label
+    { font-size: 10px; font-weight: bold; white-space: nowrap; }
+  .org-info-js_search-highlight
+    { background-color: #ffff00; color: #000000; font-weight: bold; }
+  .org-svg { width: 90%; }
+  /*]]>*/-->
+</style>
+<link rel="stylesheet" type="text/css" href="tufte-css/tufte.css" />
+<script type="text/javascript">
+/*
+@licstart  The following is the entire license notice for the
+JavaScript code in this tag.
+
+Copyright (C) 2012-2020 Free Software Foundation, Inc.
+
+The JavaScript code in this tag is free software: you can
+redistribute it and/or modify it under the terms of the GNU
+General Public License (GNU GPL) as published by the Free Software
+Foundation, either version 3 of the License, or (at your option)
+any later version.  The code is distributed WITHOUT ANY WARRANTY;
+without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU GPL for more details.
+
+As additional permission under GNU GPL version 3 section 7, you
+may distribute non-source (e.g., minimized or compacted) forms of
+that code without the copy of the GNU GPL normally required by
+section 4, provided you include this license notice and a URL
+through which recipients can access the Corresponding Source.
+
+
+@licend  The above is the entire license notice
+for the JavaScript code in this tag.
+*/
+<!--/*--><![CDATA[/*><!--*/
+ function CodeHighlightOn(elem, id)
+ {
+   var target = document.getElementById(id);
+   if(null != target) {
+     elem.cacheClassElem = elem.className;
+     elem.cacheClassTarget = target.className;
+     target.className = "code-highlighted";
+     elem.className   = "code-highlighted";
+   }
+ }
+ function CodeHighlightOff(elem, id)
+ {
+   var target = document.getElementById(id);
+   if(elem.cacheClassElem)
+     elem.className = elem.cacheClassElem;
+   if(elem.cacheClassTarget)
+     target.className = elem.cacheClassTarget;
+ }
+/*]]>*///-->
+</script>
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+        displayAlign: "center",
+        displayIndent: "0em",
+
+        "HTML-CSS": { scale: 100,
+                        linebreaks: { automatic: "false" },
+                        webFont: "TeX"
+                       },
+        SVG: {scale: 100,
+              linebreaks: { automatic: "false" },
+              font: "TeX"},
+        NativeMML: {scale: 100},
+        TeX: { equationNumbers: {autoNumber: "AMS"},
+               MultLineWidth: "85%",
+               TagSide: "right",
+               TagIndent: ".8em"
+             }
+});
+</script>
+<script type="text/javascript"
+        src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS_HTML"></script>
+</head>
+<body>
+<div id="content">
+<h1 class="title">A Python PID Controller</h1>
+<div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#orgfdad4f1">1. Introduction</a></li>
+<li><a href="#orgeeb3b3d">2. Theory</a></li>
+<li><a href="#orga97a6b4">3. Test Harness</a>
+<ul>
+<li><a href="#orgce52ad8">3.1. Graphical Fixture</a></li>
+</ul>
+</li>
+<li><a href="#org4dbd032">4. Scenarios</a>
+<ul>
+<li><a href="#org050e6ac">4.1. Testing the PID controller</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+
+<div id="outline-container-orgfdad4f1" class="outline-2">
+<h2 id="orgfdad4f1"><span class="section-number-2">1</span> Introduction</h2>
+<div class="outline-text-2" id="text-1">
+<p>
+In assembling my Raspberry Pi NAS, I spec'd a Pimoroni FanShim device to help keep the CPU cool. It
+comes along with an open-source Python library for controlling the fan which I've deployed to the
+NAS and which has kept it reasonably controlled. However, the control algorithm is a very basic
+bang-bang approach which means that the fan comes on often at high intensity and then shuts down. To
+be honest, the fan noise is kind of annoying! To rectify this, I've decided to put together a little
+PID controller which I can integrate with the FanShim. This document contains the definition and
+theory of the controller, along with some test cases.
+</p>
+</div>
+</div>
+
+<div id="outline-container-orgeeb3b3d" class="outline-2">
+<h2 id="orgeeb3b3d"><span class="section-number-2">2</span> Theory</h2>
+<div class="outline-text-2" id="text-2">
+<p>
+A PID controller, as its name implies, combines three terms to create a control signal: a
+<i>proportional</i> term, which applies a constant gain to the current error value; an <i>integral</i> term,
+which drives down steady-state error; and a <i>derivative</i> term which helps to dampen the control
+system response. Written mathematically the control signal at time \(t\) is:
+</p>
+
+\begin{equation}
+    u(t) = K_p e(t) + K_i \int_0^t e(\tau) d\tau + K_d \frac{de(t)}{dt}
+\end{equation}
+
+<p>
+We integrate these terms together as part of a control loop which measures the system state at a
+given moment in time and applies a control signal to the system to reduce any error.
+</p>
+
+<div class="org-src-container">
+<pre class="src src-python" id="org9d7c5f4"><span style="color: #8D8D84;"># </span><span style="color: #8D8D84; font-style: italic;">Create the PID controller object with specific gains.</span>
+<span style="color: #BA36A5;">controller</span> = PidController<span style="color: #707183;">(</span>kp, ki, kd<span style="color: #707183;">)</span>
+controller.set_target<span style="color: #707183;">(</span>target<span style="color: #707183;">)</span>
+
+<span style="color: #8D8D84;"># </span><span style="color: #8D8D84; font-style: italic;">A basic control loop: measure the system error and produce a control signal.</span>
+<span style="color: #0000FF;">while</span> <span style="color: #D0372D;">True</span>:
+    <span style="color: #BA36A5;">t</span> = system.get_time<span style="color: #707183;">()</span>
+    <span style="color: #BA36A5;">state</span> = system.get_state<span style="color: #707183;">()</span>
+    <span style="color: #BA36A5;">resp</span> = controller.<span style="color: #006FE0; font-weight: bold;">next</span><span style="color: #707183;">(</span>t, state<span style="color: #707183;">)</span>
+    system.control<span style="color: #707183;">(</span>resp<span style="color: #707183;">)</span>
+</pre>
+</div>
+
+<p>
+Our controller is a Python class which handles three main responsibilities:
+</p>
+
+<ol class="org-ol">
+<li>Remember the gains and desired state.</li>
+<li>Remember enough history to compute the higher-order terms.</li>
+<li>Encapsulate computation of the control signal.</li>
+</ol>
+
+<p>
+We need enough information at construction time to be able to set up the controller state and ensure
+that future calls to <code>next()</code> succeed. To do this we need to ask for an initial state and timestamp
+in addition to the gains.
+</p>
+
+<div class="org-src-container">
+<pre class="src src-python" id="org2c2ca76"><span style="color: #0000FF;">class</span> <span style="color: #6434A3;">PidController</span><span style="color: #707183;">()</span>:
+    <span style="color: #036A07;">"""A classical PID controller which maintains state between calls.</span>
+
+<span style="color: #036A07;">    This class is intended to be integrated into an external control loop. It</span>
+<span style="color: #036A07;">    remembers enough of the state history to compute integral and derivative</span>
+<span style="color: #036A07;">    terms, and produces a combined control signal with the given gains.</span>
+<span style="color: #036A07;">    """</span>
+
+    <span style="color: #0000FF;">def</span> <span style="color: #006699;">__init__</span><span style="color: #707183;">(</span><span style="color: #0000FF;">self</span>,
+                 kp: <span style="color: #006FE0; font-weight: bold;">float</span>,
+                 ki: <span style="color: #006FE0; font-weight: bold;">float</span>,
+                 kd: <span style="color: #006FE0; font-weight: bold;">float</span>,
+                 target: <span style="color: #006FE0; font-weight: bold;">float</span>,
+                 initial_state: <span style="color: #006FE0; font-weight: bold;">float</span>,
+                 t_0: <span style="color: #006FE0; font-weight: bold;">int</span><span style="color: #707183;">)</span> -&gt; <span style="color: #D0372D;">None</span>:
+        <span style="color: #036A07;">"""Create a PID controller with the specified gains and initial state.</span>
+
+<span style="color: #036A07;">        Parameters</span>
+<span style="color: #036A07;">        ----------</span>
+<span style="color: #036A07;">        kp, ki, kd    : The PID control gains.</span>
+<span style="color: #036A07;">        target        : The desired system state, also called a "setpoint".</span>
+<span style="color: #036A07;">        initial_state : The starting state of the system.</span>
+<span style="color: #036A07;">        t_0           : The starting time.</span>
+<span style="color: #036A07;">        """</span>
+        <span style="color: #8D8D84;"># </span><span style="color: #8D8D84; font-style: italic;">Gains for the proportional, integral, and derivative terms.</span>
+        <span style="color: #0000FF;">self</span>._kp: <span style="color: #006FE0; font-weight: bold;">float</span> = kp
+        <span style="color: #0000FF;">self</span>._ki: <span style="color: #006FE0; font-weight: bold;">float</span> = ki
+        <span style="color: #0000FF;">self</span>._kd: <span style="color: #006FE0; font-weight: bold;">float</span> = kd
+
+        <span style="color: #8D8D84;"># </span><span style="color: #8D8D84; font-style: italic;">The target state which the controller tries to maintain.</span>
+        <span style="color: #0000FF;">self</span>._target: <span style="color: #006FE0; font-weight: bold;">float</span> = target
+
+        <span style="color: #8D8D84;"># </span><span style="color: #8D8D84; font-style: italic;">Tracks the integrated error over time. This starts a 0 as no time has passed.</span>
+        <span style="color: #0000FF;">self</span>._accumulated_error: <span style="color: #006FE0; font-weight: bold;">float</span> = 0.0
+        <span style="color: #8D8D84;"># </span><span style="color: #8D8D84; font-style: italic;">Tracks the previous error to compute derivative term.</span>
+        <span style="color: #0000FF;">self</span>._last_error: <span style="color: #006FE0; font-weight: bold;">float</span> = initial_state - target
+        <span style="color: #8D8D84;"># </span><span style="color: #8D8D84; font-style: italic;">Tracks the previous sample time point for computing derivative.</span>
+        <span style="color: #0000FF;">self</span>._last_t: <span style="color: #006FE0; font-weight: bold;">int</span> = t_0
+</pre>
+</div>
+
+<p>
+To compute a control signal the user must provide the current system state and time. We can then
+compute an error term by comparing the state against our desired state, and feed that down into the
+PID subexpressions to compute an overall control signal.
+</p>
+
+<div class="org-src-container">
+<pre class="src src-python" id="orgacde6f8"><span style="color: #0000FF;">def</span> <span style="color: #006699;">next</span><span style="color: #707183;">(</span><span style="color: #0000FF;">self</span>, t: <span style="color: #006FE0; font-weight: bold;">int</span>, state: <span style="color: #006FE0; font-weight: bold;">float</span><span style="color: #707183;">)</span> -&gt; <span style="color: #006FE0; font-weight: bold;">float</span>:
+    <span style="color: #036A07;">"""Incorporate a sample of the state at time t and produce a control value.</span>
+
+<span style="color: #036A07;">    Because the controller is stateful, calls to this method should be</span>
+<span style="color: #036A07;">    monotonic, that is, subsequent calls should not go backwards in time.</span>
+
+<span style="color: #036A07;">    Parameters</span>
+<span style="color: #036A07;">    ----------</span>
+<span style="color: #036A07;">    t     : The time at which the sample was taken.</span>
+<span style="color: #036A07;">    state : The system state at time t.</span>
+<span style="color: #036A07;">    """</span>
+    <span style="color: #BA36A5;">error</span> = state - <span style="color: #0000FF;">self</span>._target
+    <span style="color: #BA36A5;">p</span> = <span style="color: #0000FF;">self</span>._proportional<span style="color: #707183;">(</span>error<span style="color: #707183;">)</span>
+    <span style="color: #BA36A5;">i</span> = <span style="color: #0000FF;">self</span>._integral<span style="color: #707183;">(</span>t, error<span style="color: #707183;">)</span>
+    <span style="color: #BA36A5;">d</span> = <span style="color: #0000FF;">self</span>._derivative<span style="color: #707183;">(</span>t, error<span style="color: #707183;">)</span>
+    <span style="color: #0000FF;">return</span> p + i + d
+</pre>
+</div>
+
+<p>
+Each sub-expression, in turn, is a simple computation on top of the previous state. We compute our
+weighted contribution to the control signal, record any updates to the controller state for the next
+step, and return.
+</p>
+
+<div class="org-src-container">
+<pre class="src src-python" id="org936dd90"><span style="color: #0000FF;">def</span> <span style="color: #006699;">_proportional</span><span style="color: #707183;">(</span><span style="color: #0000FF;">self</span>, error: <span style="color: #006FE0; font-weight: bold;">float</span><span style="color: #707183;">)</span> -&gt; <span style="color: #006FE0; font-weight: bold;">float</span>:
+    <span style="color: #0000FF;">return</span> <span style="color: #0000FF;">self</span>._kp * error
+
+
+<span style="color: #0000FF;">def</span> <span style="color: #006699;">_integral</span><span style="color: #707183;">(</span><span style="color: #0000FF;">self</span>, t: <span style="color: #006FE0; font-weight: bold;">float</span>, error: <span style="color: #006FE0; font-weight: bold;">float</span><span style="color: #707183;">)</span> -&gt; <span style="color: #006FE0; font-weight: bold;">float</span>:
+    <span style="color: #0000FF;">self</span>._accumulated_error += error
+    <span style="color: #0000FF;">return</span> <span style="color: #0000FF;">self</span>._ki * <span style="color: #0000FF;">self</span>._accumulated_error
+
+
+<span style="color: #0000FF;">def</span> <span style="color: #006699;">_derivative</span><span style="color: #707183;">(</span><span style="color: #0000FF;">self</span>, t: <span style="color: #006FE0; font-weight: bold;">float</span>, error: <span style="color: #006FE0; font-weight: bold;">float</span><span style="color: #707183;">)</span> -&gt; <span style="color: #006FE0; font-weight: bold;">float</span>:
+    <span style="color: #BA36A5;">d_e</span> = <span style="color: #707183;">(</span>error - <span style="color: #0000FF;">self</span>._last_error<span style="color: #707183;">)</span>
+    <span style="color: #BA36A5;">d_t</span> = <span style="color: #707183;">(</span>t - <span style="color: #0000FF;">self</span>._last_t<span style="color: #707183;">)</span>
+    <span style="color: #0000FF;">self</span>._last_error = error
+    <span style="color: #0000FF;">self</span>._last_t = t
+    <span style="color: #0000FF;">if</span> d_t &gt; 0:
+        <span style="color: #0000FF;">return</span> <span style="color: #0000FF;">self</span>._kd * <span style="color: #707183;">(</span>d_e / d_t<span style="color: #707183;">)</span>
+    <span style="color: #0000FF;">else</span>:
+        <span style="color: #0000FF;">return</span> 0
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-orga97a6b4" class="outline-2">
+<h2 id="orga97a6b4"><span class="section-number-2">3</span> Test Harness</h2>
+<div class="outline-text-2" id="text-3">
+<p>
+To test the controller we need to simulate a physical system under control. A canonical example
+often used to illustrate PID control is a temperature controller. We'll simulate a very simple
+system which is experiencing a thermal load and use the PID controller to actuate a cooling
+system.
+</p>
+
+<p>
+Our system will consist of a body with mass \(m\) and specific heat capacity \(c_p\) to which we will
+apply a heat flow \(\phi_{\mathrm{in}} = \frac{Q_{\mathrm{in}}}{\Delta t}\). Conceptually, this models
+a body which is being heated such as a CPU under load. The controller will drive a corresponding
+heat flow out of the body, \(\phi_{\mathrm{out}} = \frac{Q_{\mathrm{out}}}{\Delta t}\), simulating a
+cooling device such as a fan.
+</p>
+
+<p>
+From this we derive the state equation for our test mass:
+</p>
+
+\begin{equation}
+    T_{\mathrm{body}}(t_n) = T_{\mathrm{body}}(t_{n-1}) + (\phi_{\mathrm{in}}(t_{n}) - \phi_{\mathrm{out}}(t_{n})) (t-t_{n-1})
+\end{equation}
+
+<p>
+Note that we allow both the input and output heat flows to vary with time; this is necessary to
+model the control loop. To model this in Python, we can start by defining the behavior of the test
+mass itself, independently of thermal flows.
+</p>
+
+<div class="org-src-container">
+<pre class="src src-python" id="org048ed0c"><span style="color: #0000FF;">class</span> <span style="color: #6434A3;">ThermalMass</span><span style="color: #707183;">()</span>:
+
+    <span style="color: #0000FF;">def</span> <span style="color: #006699;">__init__</span><span style="color: #707183;">(</span><span style="color: #0000FF;">self</span>, mass: <span style="color: #006FE0; font-weight: bold;">float</span>, cp: <span style="color: #006FE0; font-weight: bold;">float</span>, start_temp: <span style="color: #006FE0; font-weight: bold;">float</span><span style="color: #707183;">)</span>:
+        <span style="color: #036A07;">"""Create a thermal mass with the given properties.</span>
+
+<span style="color: #036A07;">        Parameters</span>
+<span style="color: #036A07;">        ----------</span>
+<span style="color: #036A07;">        mass       : The body's mass in kilograms.</span>
+<span style="color: #036A07;">        cp         : The body's specific heat capacity in J/K/kg.</span>
+<span style="color: #036A07;">        start_temp : The body's starting temperature, in Kelvin.</span>
+<span style="color: #036A07;">        """</span>
+        <span style="color: #0000FF;">self</span>._mass = mass
+        <span style="color: #0000FF;">self</span>._cp = cp
+        <span style="color: #0000FF;">self</span>._temp = start_temp
+
+
+    <span style="color: #0000FF;">def</span> <span style="color: #006699;">current_temperature</span><span style="color: #707183;">(</span><span style="color: #0000FF;">self</span><span style="color: #707183;">)</span> -&gt; <span style="color: #006FE0; font-weight: bold;">float</span>:
+        <span style="color: #036A07;">"""Get the current temperature of the body."""</span>
+        <span style="color: #0000FF;">return</span> <span style="color: #0000FF;">self</span>._temp
+
+
+    <span style="color: #0000FF;">def</span> <span style="color: #006699;">update</span><span style="color: #707183;">(</span><span style="color: #0000FF;">self</span>, heat_in: <span style="color: #006FE0; font-weight: bold;">float</span>, heat_out: <span style="color: #006FE0; font-weight: bold;">float</span><span style="color: #707183;">)</span>:
+        <span style="color: #036A07;">"""Update the body state given a certain heat input and output.</span>
+
+<span style="color: #036A07;">        Parameters</span>
+<span style="color: #036A07;">        ----------</span>
+<span style="color: #036A07;">        heat_in  : The amount of heat added to the body in Joules.</span>
+<span style="color: #036A07;">        heat_out : The amount of heat removed from the body in Joules.</span>
+<span style="color: #036A07;">        """</span>
+        <span style="color: #BA36A5;">d_q</span> = heat_in - heat_out
+        <span style="color: #8D8D84;"># </span><span style="color: #8D8D84; font-style: italic;">We find the change in temperature by taking the change in heat and scaling it by the</span>
+        <span style="color: #8D8D84;"># </span><span style="color: #8D8D84; font-style: italic;">body's heat capacity.</span>
+        <span style="color: #0000FF;">self</span>._temp += d_q / <span style="color: #707183;">(</span><span style="color: #0000FF;">self</span>._mass * <span style="color: #0000FF;">self</span>._cp<span style="color: #707183;">)</span>
+</pre>
+</div>
+
+<p>
+Next, we create a test harness which will manage the bookkeeping of the flows and integrate our
+controller.
+</p>
+
+<div class="org-src-container">
+<pre class="src src-python" id="orge3c64b9"><span style="color: #0000FF;">from</span> typing <span style="color: #0000FF;">import</span> Callable, Iterable, Tuple, List
+
+<span style="color: #0000FF;">class</span> <span style="color: #6434A3;">ThermalSystem</span><span style="color: #707183;">()</span>:
+
+    <span style="color: #0000FF;">def</span> <span style="color: #006699;">__init__</span><span style="color: #707183;">(</span><span style="color: #0000FF;">self</span>,
+                 mass: ThermalMass,
+                 in_flow: Callable<span style="color: #7388D6;">[</span><span style="color: #909183;">[</span><span style="color: #006FE0; font-weight: bold;">int</span><span style="color: #909183;">]</span>, <span style="color: #006FE0; font-weight: bold;">float</span><span style="color: #7388D6;">]</span>,
+                 out_flow: Callable<span style="color: #7388D6;">[</span><span style="color: #909183;">[</span><span style="color: #006FE0; font-weight: bold;">int</span>, <span style="color: #006FE0; font-weight: bold;">float</span><span style="color: #909183;">]</span>, <span style="color: #006FE0; font-weight: bold;">float</span><span style="color: #7388D6;">]</span><span style="color: #707183;">)</span>:
+        <span style="color: #036A07;">"""Create a simple thermal system with the given mass and flow functions.</span>
+
+<span style="color: #036A07;">        Parameters</span>
+<span style="color: #036A07;">        ----------</span>
+<span style="color: #036A07;">        mass     : A thermal mass to use as the system's body of interest.</span>
+<span style="color: #036A07;">        in_flow  : The heat flow rate (in J/s) into the body as a function of time.</span>
+<span style="color: #036A07;">        out_flow : The heat flow rate (in J/s) out of the body as a function of time and</span>
+<span style="color: #036A07;">                   temperature.</span>
+<span style="color: #036A07;">        """</span>
+        <span style="color: #0000FF;">self</span>._mass = mass
+        <span style="color: #0000FF;">self</span>._in_flow = in_flow
+        <span style="color: #0000FF;">self</span>._out_flow = out_flow
+
+
+    <span style="color: #0000FF;">def</span> <span style="color: #006699;">simulate</span><span style="color: #707183;">(</span><span style="color: #0000FF;">self</span>, timesteps: Iterable<span style="color: #7388D6;">[</span><span style="color: #006FE0; font-weight: bold;">int</span><span style="color: #7388D6;">]</span><span style="color: #707183;">)</span> -&gt; List<span style="color: #707183;">[</span>Tuple<span style="color: #7388D6;">[</span><span style="color: #006FE0; font-weight: bold;">int</span>, <span style="color: #006FE0; font-weight: bold;">float</span>, <span style="color: #006FE0; font-weight: bold;">float</span>, <span style="color: #006FE0; font-weight: bold;">float</span><span style="color: #7388D6;">]</span><span style="color: #707183;">]</span>:
+        <span style="color: #036A07;">"""Simulate the system behavior over time, and give a state trace.</span>
+
+<span style="color: #036A07;">        This function runs the system state forward using the given timestep</span>
+<span style="color: #036A07;">        sequence. At each time point it computes input and output heat flows,</span>
+<span style="color: #036A07;">        updates the thermal mass, and records a datapoint for the output trace.</span>
+<span style="color: #036A07;">        The trace consists of a sequence of tuples, one for each time point,</span>
+<span style="color: #036A07;">        containing the time value, the temperature, and the instantaneous heat</span>
+<span style="color: #036A07;">        flow in and out values at that time.</span>
+
+<span style="color: #036A07;">        Parameters</span>
+<span style="color: #036A07;">        ----------</span>
+<span style="color: #036A07;">        timesteps : A monotonically increasing sequence of timepoints.</span>
+
+<span style="color: #036A07;">        """</span>
+        <span style="color: #BA36A5;">trace</span> = <span style="color: #707183;">[]</span>
+        <span style="color: #BA36A5;">it</span> = timesteps.__iter__<span style="color: #707183;">()</span>
+        <span style="color: #BA36A5;">last_t</span> = it.__next__<span style="color: #707183;">()</span>
+        <span style="color: #BA36A5;">temp</span> = <span style="color: #0000FF;">self</span>._mass.current_temperature<span style="color: #707183;">()</span>
+        <span style="color: #BA36A5;">flow_in</span> = <span style="color: #0000FF;">self</span>._in_flow<span style="color: #707183;">(</span>last_t<span style="color: #707183;">)</span>
+        <span style="color: #BA36A5;">flow_out</span> = <span style="color: #0000FF;">self</span>._out_flow<span style="color: #707183;">(</span>last_t, temp<span style="color: #707183;">)</span>
+
+        trace.append<span style="color: #707183;">(</span><span style="color: #7388D6;">(</span>last_t, temp, flow_in, flow_out<span style="color: #7388D6;">)</span><span style="color: #707183;">)</span>
+
+        <span style="color: #0000FF;">for</span> t <span style="color: #0000FF;">in</span> it:
+            <span style="color: #BA36A5;">dt</span> = t - last_t
+            <span style="color: #BA36A5;">last_t</span> = t
+
+            <span style="color: #BA36A5;">heat_in</span> = flow_in * dt
+            <span style="color: #BA36A5;">heat_out</span> = flow_out * dt
+
+            <span style="color: #0000FF;">self</span>._mass.update<span style="color: #707183;">(</span>heat_in, heat_out<span style="color: #707183;">)</span>
+
+            <span style="color: #BA36A5;">temp</span> = <span style="color: #0000FF;">self</span>._mass.current_temperature<span style="color: #707183;">()</span>
+            <span style="color: #BA36A5;">flow_in</span> = <span style="color: #0000FF;">self</span>._in_flow<span style="color: #707183;">(</span>t<span style="color: #707183;">)</span>
+            <span style="color: #BA36A5;">flow_out</span> = <span style="color: #0000FF;">self</span>._out_flow<span style="color: #707183;">(</span>t, temp<span style="color: #707183;">)</span>
+            trace.append<span style="color: #707183;">(</span><span style="color: #7388D6;">(</span>t, temp, flow_in, flow_out<span style="color: #7388D6;">)</span><span style="color: #707183;">)</span>
+
+        <span style="color: #0000FF;">return</span> trace
+</pre>
+</div>
+</div>
+
+<div id="outline-container-orgce52ad8" class="outline-3">
+<h3 id="orgce52ad8"><span class="section-number-3">3.1</span> Graphical Fixture</h3>
+<div class="outline-text-3" id="text-3-1">
+<p>
+To help understand the behavior of our system, we can a scenario and plot the resulting system state
+over time. To do so we'll define a helper class which takes care of plotting the state trace.
+</p>
+
+<div class="org-src-container">
+<pre class="src src-python" id="org799ebe5"><span style="color: #0000FF;">import</span> csv
+<span style="color: #0000FF;">import</span> subprocess
+<span style="color: #0000FF;">import</span> sys
+
+<span style="color: #0000FF;">from</span> string <span style="color: #0000FF;">import</span> Template
+<span style="color: #0000FF;">from</span> thermal <span style="color: #0000FF;">import</span> ThermalSystem
+<span style="color: #0000FF;">from</span> typing <span style="color: #0000FF;">import</span> Iterable
+
+
+<span style="color: #0000FF;">class</span> <span style="color: #6434A3;">GraphicalFixture</span><span style="color: #707183;">()</span>:
+
+    <span style="color: #BA36A5;">GNUPLOT_TEMPLATE</span> = Template<span style="color: #707183;">(</span><span style="color: #008000;">"""</span>
+<span style="color: #008000;">    # set term pngcairo transparent truecolor</span>
+<span style="color: #008000;">    set term svg</span>
+<span style="color: #008000;">    set output "$output_file"</span>
+
+<span style="color: #008000;">    set datafile separator ","</span>
+
+<span style="color: #008000;">    set timefmt '%S'</span>
+<span style="color: #008000;">    set format x ""</span>
+<span style="color: #008000;">    set xdata time</span>
+
+<span style="color: #008000;">    set key noautotitle</span>
+<span style="color: #008000;">    set xlabel 'Time'</span>
+
+<span style="color: #008000;">    set style line 101 lw 2 lt rgb "#ba0306"</span>
+<span style="color: #008000;">    set style line 102 lw 2 lt rgb "#aaaaaa"</span>
+<span style="color: #008000;">    set style line 103 lw 2 lt rgb "#2e2e2e"</span>
+
+<span style="color: #008000;">    set style line 11 lc rgb '#808080' lt 1</span>
+<span style="color: #008000;">    set border 3 back ls 11</span>
+<span style="color: #008000;">    set tics nomirror</span>
+
+<span style="color: #008000;">    set ytics scale 0.5 20</span>
+
+<span style="color: #008000;">    set multiplot layout 3,1 rowsfirst</span>
+
+<span style="color: #008000;">    set title "Input"</span>
+<span style="color: #008000;">    set ylabel "Flow Rate"</span>
+<span style="color: #008000;">    plot "$input_file" using 1:3 with lines ls 102</span>
+
+<span style="color: #008000;">    set title "System State"</span>
+<span style="color: #008000;">    set ylabel "Temperature"</span>
+<span style="color: #008000;">    plot "$input_file" using 1:2 with lines ls 101</span>
+
+<span style="color: #008000;">    set title "Control"</span>
+<span style="color: #008000;">    set ylabel "Flow Rate"</span>
+<span style="color: #008000;">    plot "$input_file" using 1:4 with lines ls 103</span>
+
+<span style="color: #008000;">    unset multiplot</span>
+<span style="color: #008000;">    """</span><span style="color: #707183;">)</span>
+
+    <span style="color: #0000FF;">def</span> <span style="color: #006699;">__init__</span><span style="color: #707183;">(</span><span style="color: #0000FF;">self</span>, name: <span style="color: #006FE0; font-weight: bold;">str</span>, system: ThermalSystem<span style="color: #707183;">)</span>:
+        <span style="color: #0000FF;">self</span>._name = name
+        <span style="color: #0000FF;">self</span>._system = system
+
+
+    <span style="color: #0000FF;">def</span> <span style="color: #006699;">simulate</span><span style="color: #707183;">(</span><span style="color: #0000FF;">self</span>, timesteps: Iterable<span style="color: #7388D6;">[</span><span style="color: #006FE0; font-weight: bold;">int</span><span style="color: #7388D6;">]</span><span style="color: #707183;">)</span> -&gt; <span style="color: #006FE0; font-weight: bold;">str</span>:
+        <span style="color: #036A07;">"""Run the simulation over the given timesteps and plot the state.</span>
+
+<span style="color: #036A07;">        Returns a filename containing the state plot.</span>
+<span style="color: #036A07;">        """</span>
+        <span style="color: #BA36A5;">trace</span> = <span style="color: #0000FF;">self</span>._system.simulate<span style="color: #707183;">(</span>timesteps<span style="color: #707183;">)</span>
+        <span style="color: #BA36A5;">csvfile</span> = f<span style="color: #008000;">"traces/{self._name}.csv"</span>
+        <span style="color: #0000FF;">with</span> <span style="color: #006FE0; font-weight: bold;">open</span><span style="color: #707183;">(</span>csvfile, <span style="color: #008000;">"w"</span>, newline=<span style="color: #008000;">''</span><span style="color: #707183;">)</span> <span style="color: #0000FF;">as</span> csvf:
+            csvf.write<span style="color: #707183;">(</span><span style="color: #008000;">"t,temp,flow-in,flow-out\n"</span><span style="color: #707183;">)</span>
+            csv.writer<span style="color: #707183;">(</span>csvf<span style="color: #707183;">)</span>.writerows<span style="color: #707183;">(</span>trace<span style="color: #707183;">)</span>
+
+        <span style="color: #BA36A5;">svgfile</span> = f<span style="color: #008000;">"img/{self._name}.svg"</span>
+
+        <span style="color: #BA36A5;">gpfile</span> = f<span style="color: #008000;">"traces/{self._name}.gp"</span>
+        <span style="color: #0000FF;">with</span> <span style="color: #006FE0; font-weight: bold;">open</span><span style="color: #707183;">(</span>gpfile, <span style="color: #008000;">"w"</span><span style="color: #707183;">)</span> <span style="color: #0000FF;">as</span> gpf:
+            gpf.write<span style="color: #707183;">(</span><span style="color: #0000FF;">self</span>.GNUPLOT_TEMPLATE.substitute<span style="color: #7388D6;">(</span>input_file=csvfile,
+                                                       output_file=svgfile<span style="color: #7388D6;">)</span><span style="color: #707183;">)</span>
+
+        subprocess.run<span style="color: #707183;">(</span><span style="color: #7388D6;">[</span><span style="color: #008000;">"/usr/local/bin/gnuplot"</span>, gpfile<span style="color: #7388D6;">]</span>,
+                       stdout=sys.stdout,
+                       stderr=sys.stderr,
+                       check=<span style="color: #D0372D;">True</span><span style="color: #707183;">)</span>
+
+
+        <span style="color: #0000FF;">return</span> svgfile
+</pre>
+</div>
+
+<p>
+To plot our system state we'll rely on GNUplot. Our template reads the CSV file and plots the
+temperature and flows over time, with two Y axis scales to help keep things similarly sized.
+</p>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org4dbd032" class="outline-2">
+<h2 id="org4dbd032"><span class="section-number-2">4</span> Scenarios</h2>
+<div class="outline-text-2" id="text-4">
+<p>
+To start, let's test a simple scenario where the system is in perfect equilibrium. We should see
+that the flows balance each other out and the system temperature remains the same over time.
+</p>
+
+<div class="org-src-container">
+<pre class="src src-python" id="org5ec9fa9"><span style="color: #0000FF;">import</span> fixture
+<span style="color: #0000FF;">import</span> thermal
+
+<span style="color: #8D8D84;"># </span><span style="color: #8D8D84; font-style: italic;">Our mass is approximately equivalent to a liter of water at room temperature.</span>
+<span style="color: #BA36A5;">mass</span> = thermal.ThermalMass<span style="color: #707183;">(</span>1.0, 4000, 0<span style="color: #707183;">)</span>
+<span style="color: #BA36A5;">in_flow</span> = <span style="color: #0000FF;">lambda</span> t: 100.0 <span style="color: #8D8D84;"># </span><span style="color: #8D8D84; font-style: italic;">1 kJ/s</span>
+<span style="color: #BA36A5;">out_flow</span> = <span style="color: #0000FF;">lambda</span> t, s: 100.0 <span style="color: #8D8D84;"># </span><span style="color: #8D8D84; font-style: italic;">1 kJ/s</span>
+<span style="color: #BA36A5;">system</span> = thermal.ThermalSystem<span style="color: #707183;">(</span>mass, in_flow, out_flow<span style="color: #707183;">)</span>
+<span style="color: #BA36A5;">f</span> = fixture.GraphicalFixture<span style="color: #707183;">(</span><span style="color: #008000;">"equilibrium"</span>, system<span style="color: #707183;">)</span>
+f.simulate<span style="color: #707183;">(</span><span style="color: #006FE0; font-weight: bold;">range</span><span style="color: #7388D6;">(</span>0, 100<span style="color: #7388D6;">)</span><span style="color: #707183;">)</span>
+</pre>
+</div>
+
+
+<div class="figure">
+<p><object type="image/svg+xml" data="img/equilibrium.svg" class="org-svg">
+Sorry, your browser does not support SVG.</object>
+</p>
+</div>
+
+<p>
+A (slightly) more complex example may have a thermal runaway, when the input exceeds the output.
+</p>
+
+<div class="org-src-container">
+<pre class="src src-python" id="org9089185"><span style="color: #0000FF;">import</span> fixture
+<span style="color: #0000FF;">import</span> thermal
+
+<span style="color: #8D8D84;"># </span><span style="color: #8D8D84; font-style: italic;">Our mass is approximately equivalent to a liter of water at room temperature.</span>
+<span style="color: #BA36A5;">mass</span> = thermal.ThermalMass<span style="color: #707183;">(</span>1.0, 4000, 0<span style="color: #707183;">)</span>
+<span style="color: #BA36A5;">in_flow</span> = <span style="color: #0000FF;">lambda</span> t: 200.0 <span style="color: #8D8D84;"># </span><span style="color: #8D8D84; font-style: italic;">1 kJ/s</span>
+<span style="color: #BA36A5;">out_flow</span> = <span style="color: #0000FF;">lambda</span> t, s: 5.0 <span style="color: #8D8D84;"># </span><span style="color: #8D8D84; font-style: italic;">0.5 kJ/s</span>
+<span style="color: #BA36A5;">system</span> = thermal.ThermalSystem<span style="color: #707183;">(</span>mass, in_flow, out_flow<span style="color: #707183;">)</span>
+<span style="color: #BA36A5;">f</span> = fixture.GraphicalFixture<span style="color: #707183;">(</span><span style="color: #008000;">"runaway"</span>, system<span style="color: #707183;">)</span>
+f.simulate<span style="color: #707183;">(</span><span style="color: #006FE0; font-weight: bold;">range</span><span style="color: #7388D6;">(</span>0, 100<span style="color: #7388D6;">)</span><span style="color: #707183;">)</span>
+</pre>
+</div>
+
+
+<div class="figure">
+<p><object type="image/svg+xml" data="img/runaway.svg" class="org-svg">
+Sorry, your browser does not support SVG.</object>
+</p>
+</div>
+
+<p>
+We could also consider a random input, and how it may perturb the system.
+</p>
+
+<div class="org-src-container">
+<pre class="src src-python" id="org68b6fd1"><span style="color: #0000FF;">import</span> fixture
+<span style="color: #0000FF;">import</span> thermal
+<span style="color: #0000FF;">import</span> random
+
+random.seed<span style="color: #707183;">(</span>a=1613837227<span style="color: #707183;">)</span>
+
+<span style="color: #8D8D84;"># </span><span style="color: #8D8D84; font-style: italic;">Our mass is approximately equivalent to a liter of water at room temperature.</span>
+<span style="color: #BA36A5;">mass</span> = thermal.ThermalMass<span style="color: #707183;">(</span>1.0, 4000, 0<span style="color: #707183;">)</span>
+<span style="color: #BA36A5;">in_flow</span> = <span style="color: #0000FF;">lambda</span> t: 100 * random.random<span style="color: #707183;">()</span>
+<span style="color: #BA36A5;">out_flow</span> = <span style="color: #0000FF;">lambda</span> t, s: 100 * random.random<span style="color: #707183;">()</span>
+<span style="color: #BA36A5;">system</span> = thermal.ThermalSystem<span style="color: #707183;">(</span>mass, in_flow, out_flow<span style="color: #707183;">)</span>
+<span style="color: #BA36A5;">f</span> = fixture.GraphicalFixture<span style="color: #707183;">(</span><span style="color: #008000;">"random"</span>, system<span style="color: #707183;">)</span>
+f.simulate<span style="color: #707183;">(</span><span style="color: #006FE0; font-weight: bold;">range</span><span style="color: #7388D6;">(</span>0, 100<span style="color: #7388D6;">)</span><span style="color: #707183;">)</span>
+</pre>
+</div>
+
+
+<div class="figure">
+<p><object type="image/svg+xml" data="img/random.svg" class="org-svg">
+Sorry, your browser does not support SVG.</object>
+</p>
+</div>
+</div>
+
+<div id="outline-container-org050e6ac" class="outline-3">
+<h3 id="org050e6ac"><span class="section-number-3">4.1</span> Testing the PID controller</h3>
+<div class="outline-text-3" id="text-4-1">
+<p>
+With the test harness defined and a few basic scenarios under our belts, it's time to consider
+behavior of our PID controller itself. We can adapt our constant-input example, giving the PID
+controller responsibility for setting the output flow rate. Note how there is an initial overshoot,
+a corresponding undershoot, and finally a settling into steady-state as the controller stabilizes.
+</p>
+
+<div class="org-src-container">
+<pre class="src src-python" id="org5748bed"><span style="color: #0000FF;">import</span> fixture
+<span style="color: #0000FF;">import</span> thermal
+<span style="color: #0000FF;">from</span> pid_controller <span style="color: #0000FF;">import</span> PidController
+
+<span style="color: #BA36A5;">TARGET_TEMP</span> = 0
+
+<span style="color: #8D8D84;"># </span><span style="color: #8D8D84; font-style: italic;">Create our PID controller with some initial values for the gains.</span>
+<span style="color: #BA36A5;">controller</span> = PidController<span style="color: #707183;">(</span>1.0, 0.2, 0.1, TARGET_TEMP, TARGET_TEMP, 0<span style="color: #707183;">)</span>
+
+<span style="color: #BA36A5;">mass</span> = thermal.ThermalMass<span style="color: #707183;">(</span>1.0, 4000, TARGET_TEMP<span style="color: #707183;">)</span>
+<span style="color: #BA36A5;">in_flow</span> = <span style="color: #0000FF;">lambda</span> t: 100
+<span style="color: #BA36A5;">out_flow</span> = <span style="color: #0000FF;">lambda</span> t, s: controller.<span style="color: #006FE0; font-weight: bold;">next</span><span style="color: #707183;">(</span>t, s<span style="color: #707183;">)</span> * 100
+<span style="color: #BA36A5;">system</span> = thermal.ThermalSystem<span style="color: #707183;">(</span>mass, in_flow, out_flow<span style="color: #707183;">)</span>
+<span style="color: #BA36A5;">f</span> = fixture.GraphicalFixture<span style="color: #707183;">(</span><span style="color: #008000;">"pid_linear"</span>, system<span style="color: #707183;">)</span>
+f.simulate<span style="color: #707183;">(</span><span style="color: #006FE0; font-weight: bold;">range</span><span style="color: #7388D6;">(</span>0, 100<span style="color: #7388D6;">)</span><span style="color: #707183;">)</span>
+</pre>
+</div>
+
+
+<div class="figure">
+<p><object type="image/svg+xml" data="img/pid_linear.svg" class="org-svg">
+Sorry, your browser does not support SVG.</object>
+</p>
+</div>
+
+<p>
+If we adjust some of the gain terms, we can see how they impact the controller. Let's try
+eliminating the higher-order terms entirely.
+</p>
+
+<div class="org-src-container">
+<pre class="src src-python" id="orgcc9e4c4"><span style="color: #0000FF;">import</span> fixture
+<span style="color: #0000FF;">import</span> thermal
+<span style="color: #0000FF;">from</span> pid_controller <span style="color: #0000FF;">import</span> PidController
+
+<span style="color: #BA36A5;">TARGET_TEMP</span> = 0
+
+<span style="color: #BA36A5;">controller</span> = PidController<span style="color: #707183;">(</span>1.0, 0.0, 0.0, TARGET_TEMP, TARGET_TEMP, 0<span style="color: #707183;">)</span>
+
+<span style="color: #BA36A5;">mass</span> = thermal.ThermalMass<span style="color: #707183;">(</span>1.0, 4000, TARGET_TEMP<span style="color: #707183;">)</span>
+<span style="color: #BA36A5;">in_flow</span> = <span style="color: #0000FF;">lambda</span> t: 100
+<span style="color: #BA36A5;">out_flow</span> = <span style="color: #0000FF;">lambda</span> t, s: controller.<span style="color: #006FE0; font-weight: bold;">next</span><span style="color: #707183;">(</span>t, s<span style="color: #707183;">)</span> * 100
+<span style="color: #BA36A5;">system</span> = thermal.ThermalSystem<span style="color: #707183;">(</span>mass, in_flow, out_flow<span style="color: #707183;">)</span>
+<span style="color: #BA36A5;">f</span> = fixture.GraphicalFixture<span style="color: #707183;">(</span><span style="color: #008000;">"pid_p_only"</span>, system<span style="color: #707183;">)</span>
+f.simulate<span style="color: #707183;">(</span><span style="color: #006FE0; font-weight: bold;">range</span><span style="color: #7388D6;">(</span>0, 100<span style="color: #7388D6;">)</span><span style="color: #707183;">)</span>
+</pre>
+</div>
+
+
+<div class="figure">
+<p><object type="image/svg+xml" data="img/pid_p_only.svg" class="org-svg">
+Sorry, your browser does not support SVG.</object>
+</p>
+</div>
+
+<p>
+Notice how the system temperature rises before settling at a high value &#x2014; higher than the target
+we set. This is because the proportional-only controller is memoryless and cannot account for the
+residual error left over from previous steps. The integral term is needed to incorporate that
+information. What happens if we run the system with only an integral term?
+</p>
+
+<div class="org-src-container">
+<pre class="src src-python" id="org4b178e9"><span style="color: #0000FF;">import</span> fixture
+<span style="color: #0000FF;">import</span> thermal
+<span style="color: #0000FF;">from</span> pid_controller <span style="color: #0000FF;">import</span> PidController
+
+<span style="color: #BA36A5;">TARGET_TEMP</span> = 0
+
+<span style="color: #BA36A5;">controller</span> = PidController<span style="color: #707183;">(</span>0.0, 1.0, 0.0, TARGET_TEMP, TARGET_TEMP, 0<span style="color: #707183;">)</span>
+
+<span style="color: #BA36A5;">mass</span> = thermal.ThermalMass<span style="color: #707183;">(</span>1.0, 4000, TARGET_TEMP<span style="color: #707183;">)</span>
+<span style="color: #BA36A5;">in_flow</span> = <span style="color: #0000FF;">lambda</span> t: 100
+<span style="color: #BA36A5;">out_flow</span> = <span style="color: #0000FF;">lambda</span> t, s: controller.<span style="color: #006FE0; font-weight: bold;">next</span><span style="color: #707183;">(</span>t, s<span style="color: #707183;">)</span> * 100
+<span style="color: #BA36A5;">system</span> = thermal.ThermalSystem<span style="color: #707183;">(</span>mass, in_flow, out_flow<span style="color: #707183;">)</span>
+<span style="color: #BA36A5;">f</span> = fixture.GraphicalFixture<span style="color: #707183;">(</span><span style="color: #008000;">"pid_i_only"</span>, system<span style="color: #707183;">)</span>
+f.simulate<span style="color: #707183;">(</span><span style="color: #006FE0; font-weight: bold;">range</span><span style="color: #7388D6;">(</span>0, 100<span style="color: #7388D6;">)</span><span style="color: #707183;">)</span>
+</pre>
+</div>
+
+
+<div class="figure">
+<p><object type="image/svg+xml" data="img/pid_i_only.svg" class="org-svg">
+Sorry, your browser does not support SVG.</object>
+</p>
+</div>
+
+<p>
+The answer: We get wild swings in temperature as the controller is always responding to error which
+has already happened. The system is unstable and exhibits a periodic, alternating state.
+</p>
+
+<p>
+Lastly, let's try turning on only the derivative term.
+</p>
+
+<div class="org-src-container">
+<pre class="src src-python" id="orgede1105"><span style="color: #0000FF;">import</span> fixture
+<span style="color: #0000FF;">import</span> thermal
+<span style="color: #0000FF;">from</span> pid_controller <span style="color: #0000FF;">import</span> PidController
+
+<span style="color: #BA36A5;">TARGET_TEMP</span> = 0
+
+<span style="color: #BA36A5;">controller</span> = PidController<span style="color: #707183;">(</span>0.0, 0.0, 1.0, TARGET_TEMP, TARGET_TEMP, 0<span style="color: #707183;">)</span>
+
+<span style="color: #BA36A5;">mass</span> = thermal.ThermalMass<span style="color: #707183;">(</span>1.0, 4000, TARGET_TEMP<span style="color: #707183;">)</span>
+<span style="color: #BA36A5;">in_flow</span> = <span style="color: #0000FF;">lambda</span> t: 100
+<span style="color: #BA36A5;">out_flow</span> = <span style="color: #0000FF;">lambda</span> t, s: controller.<span style="color: #006FE0; font-weight: bold;">next</span><span style="color: #707183;">(</span>t, s<span style="color: #707183;">)</span> * 100
+<span style="color: #BA36A5;">system</span> = thermal.ThermalSystem<span style="color: #707183;">(</span>mass, in_flow, out_flow<span style="color: #707183;">)</span>
+<span style="color: #BA36A5;">f</span> = fixture.GraphicalFixture<span style="color: #707183;">(</span><span style="color: #008000;">"pid_d_only"</span>, system<span style="color: #707183;">)</span>
+f.simulate<span style="color: #707183;">(</span><span style="color: #006FE0; font-weight: bold;">range</span><span style="color: #7388D6;">(</span>0, 100<span style="color: #7388D6;">)</span><span style="color: #707183;">)</span>
+</pre>
+</div>
+
+
+<div class="figure">
+<p><object type="image/svg+xml" data="img/pid_d_only.svg" class="org-svg">
+Sorry, your browser does not support SVG.</object>
+</p>
+</div>
+
+<p>
+Because the derivative term only accounts for the change in error rate, it isn't very interesting
+when the system exhibits steady state behavior. Our system enters a runaway mode and the controller
+is effectively left behind.
+</p>
+
+<p>
+So, what does this show us about how these terms relate? As I outlined in the <a href="#orgeeb3b3d">Theory section</a>:
+</p>
+
+<ul class="org-ul">
+<li>The <i>proportional</i> term accounts for the error as it is right now, and is the first line of
+defense. It cannot account for the past, but it mitigates the present by trying to offset the
+latest errors.</li>
+<li>Our <i>integral</i> term is backwards-looking, and tries to clean up residual errors that have been
+missed by the proportonal term.</li>
+<li>Lastly, the <i>derivative</i> term helps to damp the system and prevent oscillations.</li>
+</ul>
+
+<p>
+Generally they should be weighted in approximately that order as well, with the proportional term
+doing most of the work and the other two helping to clean things up and keep the system stable.
+</p>
+
+<p>
+With that in mind, let's try stress-testing the controller by throwing a random input at it and see
+how it does.
+</p>
+
+<div class="org-src-container">
+<pre class="src src-python" id="org2418bea"><span style="color: #0000FF;">import</span> fixture
+<span style="color: #0000FF;">import</span> thermal
+<span style="color: #0000FF;">from</span> pid_controller <span style="color: #0000FF;">import</span> PidController
+
+<span style="color: #0000FF;">import</span> random
+
+random.seed<span style="color: #707183;">(</span>a=1613837227<span style="color: #707183;">)</span>
+<span style="color: #BA36A5;">TARGET_TEMP</span> = 0
+
+<span style="color: #BA36A5;">controller</span> = PidController<span style="color: #707183;">(</span>1.0, 0.2, 0.1, TARGET_TEMP, TARGET_TEMP, 0<span style="color: #707183;">)</span>
+
+<span style="color: #BA36A5;">mass</span> = thermal.ThermalMass<span style="color: #707183;">(</span>1.0, 4000, TARGET_TEMP<span style="color: #707183;">)</span>
+<span style="color: #BA36A5;">in_flow</span> = <span style="color: #0000FF;">lambda</span> t: 100 * random.random<span style="color: #707183;">()</span>
+<span style="color: #BA36A5;">out_flow</span> = <span style="color: #0000FF;">lambda</span> t, s: controller.<span style="color: #006FE0; font-weight: bold;">next</span><span style="color: #707183;">(</span>t, s<span style="color: #707183;">)</span> * 10
+<span style="color: #BA36A5;">system</span> = thermal.ThermalSystem<span style="color: #707183;">(</span>mass, in_flow, out_flow<span style="color: #707183;">)</span>
+<span style="color: #BA36A5;">f</span> = fixture.GraphicalFixture<span style="color: #707183;">(</span><span style="color: #008000;">"pid_random"</span>, system<span style="color: #707183;">)</span>
+f.simulate<span style="color: #707183;">(</span><span style="color: #006FE0; font-weight: bold;">range</span><span style="color: #7388D6;">(</span>0, 100<span style="color: #7388D6;">)</span><span style="color: #707183;">)</span>
+</pre>
+</div>
+
+
+<div class="figure">
+<p><object type="image/svg+xml" data="img/pid_random.svg" class="org-svg">
+Sorry, your browser does not support SVG.</object>
+</p>
+</div>
+
+<p>
+This is a lot better than the previous example, where our output signal was also random. The system
+state remains within tighter bounds and does not increase or decrease as dramatically. While there
+is still quite a bit of noise in the system, it is obvious that our controller is doing a decent
+job.
+</p>
+
+<p>
+One of the keys to getting good performance from a PID controller is to tune the parameters. How can
+we adjust the gains in our controller to get better performance? Let's try bumping up the \(K_p\) term
+to see if we can drive down the oscillations somewhat.
+</p>
+
+<div class="org-src-container">
+<pre class="src src-python" id="org1f1b839"><span style="color: #0000FF;">import</span> fixture
+<span style="color: #0000FF;">import</span> thermal
+<span style="color: #0000FF;">from</span> pid_controller <span style="color: #0000FF;">import</span> PidController
+
+<span style="color: #0000FF;">import</span> random
+
+random.seed<span style="color: #707183;">(</span>a=1613837227<span style="color: #707183;">)</span>
+
+<span style="color: #BA36A5;">TARGET_TEMP</span> = 0
+
+<span style="color: #BA36A5;">controller</span> = PidController<span style="color: #707183;">(</span>6.0, 0.8, 0.5, TARGET_TEMP, TARGET_TEMP, 0<span style="color: #707183;">)</span>
+
+<span style="color: #BA36A5;">mass</span> = thermal.ThermalMass<span style="color: #707183;">(</span>1.0, 4000, TARGET_TEMP<span style="color: #707183;">)</span>
+<span style="color: #BA36A5;">in_flow</span> = <span style="color: #0000FF;">lambda</span> t: 100 * random.random<span style="color: #707183;">()</span>
+<span style="color: #BA36A5;">out_flow</span> = <span style="color: #0000FF;">lambda</span> t, s: controller.<span style="color: #006FE0; font-weight: bold;">next</span><span style="color: #707183;">(</span>t, s<span style="color: #707183;">)</span> * 10
+<span style="color: #BA36A5;">system</span> = thermal.ThermalSystem<span style="color: #707183;">(</span>mass, in_flow, out_flow<span style="color: #707183;">)</span>
+<span style="color: #BA36A5;">f</span> = fixture.GraphicalFixture<span style="color: #707183;">(</span><span style="color: #008000;">"pid_random_p"</span>, system<span style="color: #707183;">)</span>
+f.simulate<span style="color: #707183;">(</span><span style="color: #006FE0; font-weight: bold;">range</span><span style="color: #7388D6;">(</span>0, 100<span style="color: #7388D6;">)</span><span style="color: #707183;">)</span>
+</pre>
+</div>
+
+
+<div class="figure">
+<p><object type="image/svg+xml" data="img/pid_random_p.svg" class="org-svg">
+Sorry, your browser does not support SVG.</object>
+</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div id="postamble" class="status">
+<p class="author">Author: Nick Pascucci</p>
+<p class="date">Created: 2021-02-21 Sun 10:46</p>
+<p class="validation"><a href="http://validator.w3.org/check?uri=referer">Validate</a></p>
+</div>
+</body>
+</html>
