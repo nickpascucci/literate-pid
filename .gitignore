@@ -1,5 +1,4 @@
 /__pycache__/
 *.py
-/img/
 /ltximg/
-/traces/
+/$output_file

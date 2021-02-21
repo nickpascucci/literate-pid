@@ -28,7 +28,7 @@ We integrate these terms together as part of a control loop which measures the s
 given moment in time and applies a control signal to the system to reduce any error.
 
 #+name: control-loop
-#+begin_src python :exports code
+#+begin_src python :exports code :eval no
   # Create the PID controller object with specific gains.
   controller = PidController(kp, ki, kd)
   controller.set_target(target)
@@ -41,6 +41,8 @@ given moment in time and applies a control signal to the system to reduce any er
       system.control(resp)
 #+end_src
 
+#+RESULTS: control-loop
+
 Our controller is a Python class which handles three main responsibilities:
 
 1. Remember the gains and desired state.
@@ -52,7 +54,7 @@ that future calls to ~next()~ succeed. To do this we need to ask for an initial 
 in addition to the gains.
 
 #+name: controller-class-decl
-#+begin_src python :exports code
+#+begin_src python :exports code :eval no
   class PidController():
       """A classical PID controller which maintains state between calls.
 
@@ -98,7 +100,7 @@ compute an error term by comparing the state against our desired state, and feed
 PID subexpressions to compute an overall control signal.
 
 #+name: controller-next-def
-#+begin_src python :exports code
+#+begin_src python :exports code :eval no
       def next(self, t: int, state: float) -> float:
           """Incorporate a sample of the state at time t and produce a control value.
 
@@ -122,7 +124,7 @@ weighted contribution to the control signal, record any updates to the controlle
 step, and return.
 
 #+name: controller-terms-defs
-#+begin_src python :exports code
+#+begin_src python :exports code :eval no
   def _proportional(self, error: float) -> float:
       return self._kp * error
 
@@ -144,7 +146,7 @@ step, and return.
 #+end_src
 
 #+name: controller-full
-#+begin_src python :tangle pid_controller.py :exports none :noweb yes
+#+begin_src python :tangle pid_controller.py :exports none :noweb yes :eval no
   <<controller-class-decl>>
 
 
@@ -177,7 +179,7 @@ model the control loop. To model this in Python, we can start by defining the be
 mass itself, independently of thermal flows.
 
 #+name: mass-class
-#+begin_src python :exports code
+#+begin_src python :exports code :eval no
   class ThermalMass():
 
       def __init__(self, mass: float, cp: float, start_temp: float):
@@ -217,7 +219,7 @@ Next, we create a test harness which will manage the bookkeeping of the flows an
 controller.
 
 #+name: thermal-fixture
-#+begin_src python :exports code
+#+begin_src python :exports code :eval no
   from typing import Callable, Iterable, Tuple, List
 
   class ThermalSystem():
@@ -290,13 +292,14 @@ controller.
   <<thermal-fixture>>
 #+end_src
 
+
 ** Graphical Fixture
 
 To help understand the behavior of our system, we can a scenario and plot the resulting system state
 over time. To do so we'll define a helper class which takes care of plotting the state trace.
 
 #+name: graphical-fixture-class
-#+begin_src python :noweb yes :exports code
+#+begin_src python :noweb yes :exports code :eval no
   import csv
   import subprocess
   import sys
@@ -348,7 +351,7 @@ To plot our system state we'll rely on GNUplot. Our template reads the CSV file 
 temperature and flows over time, with two Y axis scales to help keep things similarly sized.
 
 #+name: gnuplot-template
-#+begin_src gnuplot :exports none
+#+begin_src gnuplot :exports none :eval no
   # set term pngcairo transparent truecolor
   set term svg
   set output "$output_file"
@@ -389,10 +392,8 @@ temperature and flows over time, with two Y axis scales to help keep things simi
   unset multiplot
 #+end_src
 
-#+RESULTS: gnuplot-template
-
 #+name: graphical-fixture
-#+begin_src python :tangle fixture.py :exports none :noweb yes
+#+begin_src python :tangle fixture.py :exports none :noweb yes :eval no
   <<graphical-fixture-class>>
 #+end_src
 
