@@ -1,8 +1,17 @@
 #+SETUPFILE: template.org
 #+STARTUP: overview
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="tufte-css/tufte.css" />
 #+TITLE: A Python PID Controller
 
 * Introduction
+
+In assembling my Raspberry Pi NAS, I spec'd a Pimoroni FanShim device to help keep the CPU cool. It
+comes along with an open-source Python library for controlling the fan which I've deployed to the
+NAS and which has kept it reasonably controlled. However, the control algorithm is a very basic
+bang-bang approach which means that the fan comes on often at high intensity and then shuts down. To
+be honest, the fan noise is kind of annoying! To rectify this, I've decided to put together a little
+PID controller which I can integrate with the FanShim. This document contains the definition and
+theory of the controller, along with some test cases.
 
 * Theory
 
@@ -319,12 +328,12 @@ over time. To do so we'll define a helper class which takes care of plotting the
               csvf.write("t,temp,flow-in,flow-out\n")
               csv.writer(csvf).writerows(trace)
 
-          pngfile = f"img/{self._name}.png"
+          svgfile = f"img/{self._name}.svg"
 
           gpfile = f"traces/{self._name}.gp"
           with open(gpfile, "w") as gpf:
               gpf.write(self.GNUPLOT_TEMPLATE.substitute(input_file=csvfile,
-                                                         output_file=pngfile))
+                                                         output_file=svgfile))
 
           subprocess.run(["/usr/local/bin/gnuplot", gpfile],
                          stdout=sys.stdout,
@@ -332,22 +341,22 @@ over time. To do so we'll define a helper class which takes care of plotting the
                          check=True)
 
 
-          return pngfile
+          return svgfile
 #+end_src
 
 To plot our system state we'll rely on GNUplot. Our template reads the CSV file and plots the
 temperature and flows over time, with two Y axis scales to help keep things similarly sized.
 
 #+name: gnuplot-template
-#+begin_src gnuplot :exports code
-  # set terminal dumb
-  set term png
+#+begin_src gnuplot :exports none
+  # set term pngcairo transparent truecolor
+  set term svg
   set output "$output_file"
 
   set datafile separator ","
 
   set timefmt '%S'
-  set format x "%S"
+  set format x ""
   set xdata time
 
   set key noautotitle
@@ -361,7 +370,7 @@ temperature and flows over time, with two Y axis scales to help keep things simi
   set border 3 back ls 11
   set tics nomirror
 
-  set ytics scale 0.5 10
+  set ytics scale 0.5 20
 
   set multiplot layout 3,1 rowsfirst
 
@@ -378,8 +387,6 @@ temperature and flows over time, with two Y axis scales to help keep things simi
   plot "$input_file" using 1:4 with lines ls 103
 
   unset multiplot
-
-  #plot "$input_file" using 1:2 with lines ls 101, '' using 1:3 with lines axis x1y2 ls 102, '' using 1:4 with lines axis x1y2 ls 103
 #+end_src
 
 #+RESULTS: gnuplot-template
@@ -395,45 +402,45 @@ To start, let's test a simple scenario where the system is in perfect equilibriu
 that the flows balance each other out and the system temperature remains the same over time.
 
 #+name: equilibrium-scenario
-#+begin_src python :tangle equilibrium.py :results file link :file equilibrium.png :output-dir img/ :exports both
+#+begin_src python :tangle equilibrium.py :results file link :file equilibrium.svg :output-dir img/ :exports both
   import fixture
   import thermal
 
   # Our mass is approximately equivalent to a liter of water at room temperature.
-  mass = thermal.ThermalMass(1.0, 4000, 293.15)
-  in_flow = lambda t: 1000.0 # 1 kJ/s
-  out_flow = lambda t, s: 1000.0 # 1 kJ/s
+  mass = thermal.ThermalMass(1.0, 4000, 0)
+  in_flow = lambda t: 100.0 # 1 kJ/s
+  out_flow = lambda t, s: 100.0 # 1 kJ/s
   system = thermal.ThermalSystem(mass, in_flow, out_flow)
   f = fixture.GraphicalFixture("equilibrium", system)
   f.simulate(range(0, 100))
 #+end_src
 
 #+RESULTS: equilibrium-scenario
-[[file:img/equilibrium.png]]
+[[file:img/equilibrium.svg]]
 
 A (slightly) more complex example may have a thermal runaway, when the input exceeds the output.
 
 #+name: runaway-scenario
-#+begin_src python :tangle runaway.py :results file link :file runaway.png :output-dir img/ :exports both
+#+begin_src python :tangle runaway.py :results file link :file runaway.svg :output-dir img/ :exports both
   import fixture
   import thermal
 
   # Our mass is approximately equivalent to a liter of water at room temperature.
-  mass = thermal.ThermalMass(1.0, 4000, 293.15)
-  in_flow = lambda t: 1000.0 # 1 kJ/s
-  out_flow = lambda t, s: 500.0 # 0.5 kJ/s
+  mass = thermal.ThermalMass(1.0, 4000, 0)
+  in_flow = lambda t: 200.0 # 1 kJ/s
+  out_flow = lambda t, s: 5.0 # 0.5 kJ/s
   system = thermal.ThermalSystem(mass, in_flow, out_flow)
   f = fixture.GraphicalFixture("runaway", system)
   f.simulate(range(0, 100))
 #+end_src
 
 #+RESULTS: runaway-scenario
-[[file:img/runaway.png]]
+[[file:img/runaway.svg]]
 
 We could also consider a random input, and how it may perturb the system.
 
 #+name: random-scenario
-#+begin_src python :tangle random_input.py :results file link :file random.png :output-dir img/ :exports both
+#+begin_src python :tangle random_input.py :results file link :file random.svg :output-dir img/ :exports both
   import fixture
   import thermal
   import random
@@ -441,16 +448,16 @@ We could also consider a random input, and how it may perturb the system.
   random.seed(a=1613837227)
 
   # Our mass is approximately equivalent to a liter of water at room temperature.
-  mass = thermal.ThermalMass(1.0, 4000, 293.15)
-  in_flow = lambda t: 1000 * random.random()
-  out_flow = lambda t, s: 1000 * random.random()
+  mass = thermal.ThermalMass(1.0, 4000, 0)
+  in_flow = lambda t: 100 * random.random()
+  out_flow = lambda t, s: 100 * random.random()
   system = thermal.ThermalSystem(mass, in_flow, out_flow)
   f = fixture.GraphicalFixture("random", system)
   f.simulate(range(0, 100))
 #+end_src
 
 #+RESULTS: random-scenario
-[[file:img/random.png]]
+[[file:img/random.svg]]
 
 ** Testing the PID controller
 
@@ -460,50 +467,50 @@ controller responsibility for setting the output flow rate. Note how there is an
 a corresponding undershoot, and finally a settling into steady-state as the controller stabilizes.
 
 #+name: pid-linear-scenario
-#+begin_src python :tangle pid_linear.py :results file link :file pid_linear.png :output-dir img/ :exports both
+#+begin_src python :tangle pid_linear.py :results file link :file pid_linear.svg :output-dir img/ :exports both
   import fixture
   import thermal
   from pid_controller import PidController
 
-  ROOM_TEMP = 293.15
+  TARGET_TEMP = 0
 
   # Create our PID controller with some initial values for the gains.
-  controller = PidController(1.0, 0.2, 0.1, ROOM_TEMP, ROOM_TEMP, 0)
+  controller = PidController(1.0, 0.2, 0.1, TARGET_TEMP, TARGET_TEMP, 0)
 
-  mass = thermal.ThermalMass(1.0, 4000, ROOM_TEMP)
-  in_flow = lambda t: 1000
-  out_flow = lambda t, s: controller.next(t, s) * 1000
+  mass = thermal.ThermalMass(1.0, 4000, TARGET_TEMP)
+  in_flow = lambda t: 100
+  out_flow = lambda t, s: controller.next(t, s) * 100
   system = thermal.ThermalSystem(mass, in_flow, out_flow)
   f = fixture.GraphicalFixture("pid_linear", system)
   f.simulate(range(0, 100))
 #+end_src
 
 #+RESULTS: pid-linear-scenario
-[[file:img/pid_linear.png]]
+[[file:img/pid_linear.svg]]
 
 If we adjust some of the gain terms, we can see how they impact the controller. Let's try
 eliminating the higher-order terms entirely.
 
 #+name: pid-p-only-scenario
-#+begin_src python :tangle pid_p_only.py :results file link :file pid_p_only.png :output-dir img/ :exports both
+#+begin_src python :tangle pid_p_only.py :results file link :file pid_p_only.svg :output-dir img/ :exports both
   import fixture
   import thermal
   from pid_controller import PidController
 
-  ROOM_TEMP = 293.15
+  TARGET_TEMP = 0
 
-  controller = PidController(1.0, 0.0, 0.0, ROOM_TEMP, ROOM_TEMP, 0)
+  controller = PidController(1.0, 0.0, 0.0, TARGET_TEMP, TARGET_TEMP, 0)
 
-  mass = thermal.ThermalMass(1.0, 4000, ROOM_TEMP)
-  in_flow = lambda t: 1000
-  out_flow = lambda t, s: controller.next(t, s) * 1000
+  mass = thermal.ThermalMass(1.0, 4000, TARGET_TEMP)
+  in_flow = lambda t: 100
+  out_flow = lambda t, s: controller.next(t, s) * 100
   system = thermal.ThermalSystem(mass, in_flow, out_flow)
   f = fixture.GraphicalFixture("pid_p_only", system)
   f.simulate(range(0, 100))
 #+end_src
 
 #+RESULTS: pid-p-only-scenario
-[[file:img/pid_p_only.png]]
+[[file:img/pid_p_only.svg]]
 
 Notice how the system temperature rises before settling at a high value --- higher than the target
 we set. This is because the proportional-only controller is memoryless and cannot account for the
@@ -511,25 +518,25 @@ residual error left over from previous steps. The integral term is needed to inc
 information. What happens if we run the system with only an integral term?
 
 #+name: pid-i-only-scenario
-#+begin_src python :tangle pid_i_only.py :results file link :file pid_i_only.png :output-dir img/ :exports both
+#+begin_src python :tangle pid_i_only.py :results file link :file pid_i_only.svg :output-dir img/ :exports both
   import fixture
   import thermal
   from pid_controller import PidController
 
-  ROOM_TEMP = 293.15
+  TARGET_TEMP = 0
 
-  controller = PidController(0.0, 1.0, 0.0, ROOM_TEMP, ROOM_TEMP, 0)
+  controller = PidController(0.0, 1.0, 0.0, TARGET_TEMP, TARGET_TEMP, 0)
 
-  mass = thermal.ThermalMass(1.0, 4000, ROOM_TEMP)
-  in_flow = lambda t: 1000
-  out_flow = lambda t, s: controller.next(t, s) * 1000
+  mass = thermal.ThermalMass(1.0, 4000, TARGET_TEMP)
+  in_flow = lambda t: 100
+  out_flow = lambda t, s: controller.next(t, s) * 100
   system = thermal.ThermalSystem(mass, in_flow, out_flow)
   f = fixture.GraphicalFixture("pid_i_only", system)
   f.simulate(range(0, 100))
 #+end_src
 
 #+RESULTS: pid-i-only-scenario
-[[file:img/pid_i_only.png]]
+[[file:img/pid_i_only.svg]]
 
 The answer: We get wild swings in temperature as the controller is always responding to error which
 has already happened. The system is unstable and exhibits a periodic, alternating state.
@@ -537,25 +544,25 @@ has already happened. The system is unstable and exhibits a periodic, alternatin
 Lastly, let's try turning on only the derivative term.
 
 #+name: pid-d-only-scenario
-#+begin_src python :tangle pid_d_only.py :results file link :file pid_d_only.png :output-dir img/ :exports both
+#+begin_src python :tangle pid_d_only.py :results file link :file pid_d_only.svg :output-dir img/ :exports both
   import fixture
   import thermal
   from pid_controller import PidController
 
-  ROOM_TEMP = 293.15
+  TARGET_TEMP = 0
 
-  controller = PidController(0.0, 0.0, 1.0, ROOM_TEMP, ROOM_TEMP, 0)
+  controller = PidController(0.0, 0.0, 1.0, TARGET_TEMP, TARGET_TEMP, 0)
 
-  mass = thermal.ThermalMass(1.0, 4000, ROOM_TEMP)
-  in_flow = lambda t: 1000
-  out_flow = lambda t, s: controller.next(t, s) * 1000
+  mass = thermal.ThermalMass(1.0, 4000, TARGET_TEMP)
+  in_flow = lambda t: 100
+  out_flow = lambda t, s: controller.next(t, s) * 100
   system = thermal.ThermalSystem(mass, in_flow, out_flow)
   f = fixture.GraphicalFixture("pid_d_only", system)
   f.simulate(range(0, 100))
 #+end_src
 
 #+RESULTS: pid-d-only-scenario
-[[file:img/pid_d_only.png]]
+[[file:img/pid_d_only.svg]]
 
 Because the derivative term only accounts for the change in error rate, it isn't very interesting
 when the system exhibits steady state behavior. Our system enters a runaway mode and the controller
@@ -577,7 +584,7 @@ With that in mind, let's try stress-testing the controller by throwing a random 
 how it does.
 
 #+name: pid-random-scenario
-#+begin_src python :tangle pid_random.py :results file link :file pid_random.png :output-dir img/ :exports both
+#+begin_src python :tangle pid_random.py :results file link :file pid_random.svg :output-dir img/ :exports both
   import fixture
   import thermal
   from pid_controller import PidController
@@ -585,21 +592,20 @@ how it does.
   import random
 
   random.seed(a=1613837227)
+  TARGET_TEMP = 0
 
-  ROOM_TEMP = 293.15
+  controller = PidController(1.0, 0.2, 0.1, TARGET_TEMP, TARGET_TEMP, 0)
 
-  controller = PidController(1.0, 0.2, 0.1, ROOM_TEMP, ROOM_TEMP, 0)
-
-  mass = thermal.ThermalMass(1.0, 4000, ROOM_TEMP)
-  in_flow = lambda t: 1000 * random.random()
-  out_flow = lambda t, s: controller.next(t, s) * 1000
+  mass = thermal.ThermalMass(1.0, 4000, TARGET_TEMP)
+  in_flow = lambda t: 100 * random.random()
+  out_flow = lambda t, s: controller.next(t, s) * 10
   system = thermal.ThermalSystem(mass, in_flow, out_flow)
   f = fixture.GraphicalFixture("pid_random", system)
   f.simulate(range(0, 100))
 #+end_src
 
 #+RESULTS: pid-random-scenario
-[[file:img/pid_random.png]]
+[[file:img/pid_random.svg]]
 
 This is a lot better than the previous example, where our output signal was also random. The system
 state remains within tighter bounds and does not increase or decrease as dramatically. While there
@@ -611,7 +617,7 @@ we adjust the gains in our controller to get better performance? Let's try bumpi
 to see if we can drive down the oscillations somewhat.
 
 #+name: pid-random-p-scenario
-#+begin_src python :tangle pid_random_p.py :results file link :file pid_random_p.png :output-dir img/ :exports both
+#+begin_src python :tangle pid_random_p.py :results file link :file pid_random_p.svg :output-dir img/ :exports both
   import fixture
   import thermal
   from pid_controller import PidController
@@ -622,15 +628,15 @@ to see if we can drive down the oscillations somewhat.
 
   TARGET_TEMP = 0
 
-  controller = PidController(5.0, 0.8, 0.5, TARGET_TEMP, TARGET_TEMP, 0)
+  controller = PidController(6.0, 0.8, 0.5, TARGET_TEMP, TARGET_TEMP, 0)
 
   mass = thermal.ThermalMass(1.0, 4000, TARGET_TEMP)
   in_flow = lambda t: 100 * random.random()
-  out_flow = lambda t, s: controller.next(t, s) * 1000
+  out_flow = lambda t, s: controller.next(t, s) * 10
   system = thermal.ThermalSystem(mass, in_flow, out_flow)
   f = fixture.GraphicalFixture("pid_random_p", system)
   f.simulate(range(0, 100))
 #+end_src
 
 #+RESULTS: pid-random-p-scenario
-[[file:img/pid_random_p.png]]
+[[file:img/pid_random_p.svg]]
