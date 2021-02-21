@@ -518,7 +518,7 @@ a corresponding undershoot, and finally a settling into steady-state as the cont
   out_flow = lambda t, s: controller.next(t, s) * 100
   system = thermal.ThermalSystem(mass, in_flow, out_flow)
   f = fixture.GraphicalFixture("pid_linear", system)
-  f.simulate(range(0, 100))
+  f.simulate(range(0, 100), y_scales=(1, 1, 40))
 #+end_src
 
 #+RESULTS: pid-linear-scenario

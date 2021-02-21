@@ -24,7 +24,7 @@
     
     set title "Input"
     set ylabel "Flow Rate"
-    set ytics scale 0.5 10
+    set ytics scale 0.5 1
     plot "traces/pid_linear.csv" using 1:3 with lines ls 102
     
     set title "System State"
@@ -34,7 +34,7 @@
     
     set title "Control"
     set ylabel "Flow Rate"
-    set ytics scale 0.5 20
+    set ytics scale 0.5 40
     plot "traces/pid_linear.csv" using 1:4 with lines ls 103
     
     unset multiplot
