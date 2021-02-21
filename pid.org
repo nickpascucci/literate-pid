@@ -5,27 +5,37 @@
 
 * Introduction
 
-In assembling my Raspberry Pi NAS, I spec'd a Pimoroni FanShim device to help keep the CPU cool. It
-comes along with an open-source Python library for controlling the fan which I've deployed to the
-NAS and which has kept it reasonably controlled. However, the control algorithm is a very basic
-bang-bang approach which means that the fan comes on often at high intensity and then shuts down. To
-be honest, the fan noise is kind of annoying! To rectify this, I've decided to put together a little
-PID controller which I can integrate with the FanShim. This document contains the definition and
-theory of the controller, along with some test cases.
+I've recently built a NAS using a Raspberry Pi 4. The Pi 4 is a more powerful board than previous
+iterations, and it can need additional cooling to stay healthy. To achieve this for my NAS I
+attached a Pimoroni FanShim to the board, which blows ambient air across the CPU directly. Pimoroni
+provides an open-source Python library for controlling the fan along with a systemd service file.
+I deployed these to the NAS and so far it's kept the temperature reasonable.
+
+However, the control algorithm in the FanShim library is a quite basic: it uses a control algorithm
+commonly known as the "bang-bang" approach. When the CPU temperature exceeds a certain threshold
+value (65C by default) the controller turns on the fan and keeps it on until the temperature drops
+below another, lower threshold (55C). While this works reasonably well it does produce a lot of
+thermal cycling in the system. Additionally, the fan coming on at full blast for a few seconds every
+10 minutes is somewhat irritating.
+
+Fortunately we can do better! The sections below outline the basic theory of a more sophisticated
+/PID controller/, and provide a Python implementation we can play with in a test environment.
 
 * Theory
 
-A PID controller, as its name implies, combines three terms to create a control signal: a
-/proportional/ term, which applies a constant gain to the current error value; an /integral/ term,
-which drives down steady-state error; and a /derivative/ term which helps to dampen the control
-system response. Written mathematically the control signal at time $t$ is:
+A PID controller combines three terms to create a control signal: a /proportional/ term, which
+always responds to the current error with a constant gain; an /integral/ term, which drives down any
+residual steady-state error; and a /derivative/ term which helps to dampen the control system
+response so we don't have oscillatory behavior. Written mathematically the control signal at time
+$t$ is computed from the error $e(t)$ and gains $K_p$, $K_i$, and $K_d$ as:
 
 \begin{equation}
     u(t) = K_p e(t) + K_i \int_0^t e(\tau) d\tau + K_d \frac{de(t)}{dt}
 \end{equation}
 
 We integrate these terms together as part of a control loop which measures the system state at a
-given moment in time and applies a control signal to the system to reduce any error.
+given moment in time and applies a control signal to the system to reduce any error. As a first,
+rough pass at the pseudo code we might imagine something like this:
 
 #+name: control-loop
 #+begin_src python :exports code :eval no
@@ -43,15 +53,17 @@ given moment in time and applies a control signal to the system to reduce any er
 
 #+RESULTS: control-loop
 
+Now, to the implementation.
+
 Our controller is a Python class which handles three main responsibilities:
 
-1. Remember the gains and desired state.
+1. Remember the user-provided gains and desired state.
 2. Remember enough history to compute the higher-order terms.
 3. Encapsulate computation of the control signal.
 
-We need enough information at construction time to be able to set up the controller state and ensure
-that future calls to ~next()~ succeed. To do this we need to ask for an initial state and timestamp
-in addition to the gains.
+We need enough information when we build the controller to be able to set up our initial state and
+ensure that future calls to ~next()~ succeed. To do this we need to ask for a starting measurement
+and timestamp in addition to the gains.
 
 #+name: controller-class-decl
 #+begin_src python :exports code :eval no
@@ -87,41 +99,51 @@ in addition to the gains.
           # The target state which the controller tries to maintain.
           self._target: float = target
 
-          # Tracks the integrated error over time. This starts a 0 as no time has passed.
+          # Tracks the integrated error over time. This starts at 0 as no time has passed.
           self._accumulated_error: float = 0.0
-          # Tracks the previous error to compute derivative term.
+          # Tracks the previous sample's error to compute derivative term.
           self._last_error: float = initial_state - target
-          # Tracks the previous sample time point for computing derivative.
+          # Tracks the previous sample time point for computing the d_t value used in I and D terms.
           self._last_t: int = t_0
 #+end_src
 
 To compute a control signal the user must provide the current system state and time. We can then
 compute an error term by comparing the state against our desired state, and feed that down into the
-PID subexpressions to compute an overall control signal.
+PID subexpressions to compute an overall control signal. We also track some state variables which
+are necessary for computing the I and D terms.
 
 #+name: controller-next-def
 #+begin_src python :exports code :eval no
-      def next(self, t: int, state: float) -> float:
-          """Incorporate a sample of the state at time t and produce a control value.
+  def next(self, t: int, state: float) -> float:
+      """Incorporate a sample of the state at time t and produce a control value.
 
-          Because the controller is stateful, calls to this method should be
-          monotonic, that is, subsequent calls should not go backwards in time.
+      Because the controller is stateful, calls to this method should be
+      monotonic - that is, subsequent calls should not go backwards in time.
 
-          Parameters
-          ----------
-          t     : The time at which the sample was taken.
-          state : The system state at time t.
-          """
-          error = state - self._target
-          p = self._proportional(error)
-          i = self._integral(t, error)
-          d = self._derivative(t, error)
-          return p + i + d
+      Parameters
+      ----------
+      t     : The time at which the sample was taken.
+      state : The system state at time t.
+      """
+      error = state - self._target
+      d_t = (t - self._last_t)
+      p = self._proportional(error)
+      i = self._integral(d_t, error)
+      d = self._derivative(d_t, error)
+      self._last_t = t
+      self._last_error = error
+      return p + i + d
 #+end_src
 
-Each sub-expression, in turn, is a simple computation on top of the previous state. We compute our
-weighted contribution to the control signal, record any updates to the controller state for the next
-step, and return.
+Each sub-expression in turn is a simple computation on top of the previous state. We compute its
+weighted contribution to the control signal and return. 
+
+In the integral term we must calculate the accumulated error. To do so, we assume that the error
+function is piecewise linear with respect to time. At each time point we have some "base error"
+which forms a rectangular region in the state graph, topped with a triangular region. This is a
+better approximation than a piecewise constant function, but still an approximation.
+
+# TODO Add a figure here illustrating how error is computed.
 
 #+name: controller-terms-defs
 #+begin_src python :exports code :eval no
@@ -129,16 +151,17 @@ step, and return.
       return self._kp * error
 
 
-  def _integral(self, t: float, error: float) -> float:
-      self._accumulated_error += error
+  def _integral(self, d_t: float, error: float) -> float:
+      # The constant part of the error.
+      base_error = min(error, self._last_error) * d_t
+      # Adjust by adding a little triangle on the constant part.
+      error_adj = abs(error - self._last_error) * d_t / 2.0
+      self._accumulated_error += base_error + error_adj
       return self._ki * self._accumulated_error
 
 
-  def _derivative(self, t: float, error: float) -> float:
+  def _derivative(self, d_t: float, error: float) -> float:
       d_e = (error - self._last_error)
-      d_t = (t - self._last_t)
-      self._last_error = error
-      self._last_t = t
       if d_t > 0:
           return self._kd * (d_e / d_t)
       else:
@@ -157,18 +180,18 @@ step, and return.
 
 * Test Harness
 
-To test the controller we need to simulate a physical system under control. A canonical example
-often used to illustrate PID control is a temperature controller. We'll simulate a very simple
-system which is experiencing a thermal load and use the PID controller to actuate a cooling
-system.
+To test the controller we need a simulated system to control. A canonical example often used to
+illustrate PID controls is a temperature controller, so we'll start there. We'll simulate a very
+simple system in which a body is heated and use the PID controller to actuate a cooling system to
+manage its temperature.
 
-Our system will consist of a body with mass $m$ and specific heat capacity $c_p$ to which we will
+Our system will consist of a body with mass $m$ and specific heat capacity $c_p$, to which we will
 apply a heat flow $\phi_{\mathrm{in}} = \frac{Q_{\mathrm{in}}}{\Delta t}$. Conceptually, this models
-a body which is being heated such as a CPU under load. The controller will drive a corresponding
-heat flow out of the body, $\phi_{\mathrm{out}} = \frac{Q_{\mathrm{out}}}{\Delta t}$, simulating a
+a body which is being heated (i.e. a CPU under load). The controller will drive a corresponding heat
+flow /out/ of the body, $\phi_{\mathrm{out}} = \frac{Q_{\mathrm{out}}}{\Delta t}$, simulating a
 cooling device such as a fan.
 
-From this we derive the state equation for our test mass:
+From these terms we can derive the state equation for our test mass:
 
 \begin{equation}
     T_{\mathrm{body}}(t_n) = T_{\mathrm{body}}(t_{n-1}) + (\phi_{\mathrm{in}}(t_{n}) - \phi_{\mathrm{out}}(t_{n})) (t-t_{n-1})
@@ -176,7 +199,7 @@ From this we derive the state equation for our test mass:
 
 Note that we allow both the input and output heat flows to vary with time; this is necessary to
 model the control loop. To model this in Python, we can start by defining the behavior of the test
-mass itself, independently of thermal flows.
+mass itself, independently of any thermal flows.
 
 #+name: mass-class
 #+begin_src python :exports code :eval no
@@ -215,8 +238,8 @@ mass itself, independently of thermal flows.
           self._temp += d_q / (self._mass * self._cp)
 #+end_src
 
-Next, we create a test harness which will manage the bookkeeping of the flows and integrate our
-controller.
+Next, we create a test harness which will manage the bookkeeping of the input and output flows and
+integrate our controller.
 
 #+name: thermal-fixture
 #+begin_src python :exports code :eval no
@@ -255,7 +278,6 @@ controller.
           Parameters
           ----------
           timesteps : A monotonically increasing sequence of timepoints.
-
           """
           trace = []
           it = timesteps.__iter__()
@@ -283,8 +305,6 @@ controller.
           return trace
 #+end_src
 
-#+RESULTS: thermal-fixture
-
 #+name: thermal-full
 #+begin_src python :tangle thermal.py :exports none :noweb yes
   <<mass-class>>
@@ -292,11 +312,14 @@ controller.
   <<thermal-fixture>>
 #+end_src
 
+#+RESULTS: thermal-full
+: None
+
 
 ** Graphical Fixture
 
-To help understand the behavior of our system, we can a scenario and plot the resulting system state
-over time. To do so we'll define a helper class which takes care of plotting the state trace.
+To help understand the behavior of our system we can model a scenario and plot the resulting system
+state over time. Let's go ahead define a helper class which takes care of plotting the state trace.
 
 #+name: graphical-fixture-class
 #+begin_src python :noweb yes :exports code :eval no
@@ -306,7 +329,7 @@ over time. To do so we'll define a helper class which takes care of plotting the
 
   from string import Template
   from thermal import ThermalSystem
-  from typing import Iterable
+  from typing import Iterable, Tuple
 
 
   class GraphicalFixture():
@@ -320,7 +343,9 @@ over time. To do so we'll define a helper class which takes care of plotting the
           self._system = system
 
 
-      def simulate(self, timesteps: Iterable[int]) -> str:
+      def simulate(self,
+                   timesteps: Iterable[int],
+                   y_scales: Tuple[int, int, int] = (10, 1, 20)) -> str:
           """Run the simulation over the given timesteps and plot the state.
 
           Returns a filename containing the state plot.
@@ -336,7 +361,10 @@ over time. To do so we'll define a helper class which takes care of plotting the
           gpfile = f"traces/{self._name}.gp"
           with open(gpfile, "w") as gpf:
               gpf.write(self.GNUPLOT_TEMPLATE.substitute(input_file=csvfile,
-                                                         output_file=svgfile))
+                                                         output_file=svgfile,
+                                                         y1_scale=y_scales[0],
+                                                         y2_scale=y_scales[1],
+                                                         y3_scale=y_scales[2]))
 
           subprocess.run(["/usr/local/bin/gnuplot", gpfile],
                          stdout=sys.stdout,
@@ -347,7 +375,7 @@ over time. To do so we'll define a helper class which takes care of plotting the
           return svgfile
 #+end_src
 
-To plot our system state we'll rely on GNUplot. Our template reads the CSV file and plots the
+To do the actual plotting we'll rely on GNUplot. Our template reads the CSV file and plots the
 temperature and flows over time, with two Y axis scales to help keep things similarly sized.
 
 #+name: gnuplot-template
@@ -373,20 +401,21 @@ temperature and flows over time, with two Y axis scales to help keep things simi
   set border 3 back ls 11
   set tics nomirror
 
-  set ytics scale 0.5 20
-
   set multiplot layout 3,1 rowsfirst
 
   set title "Input"
   set ylabel "Flow Rate"
+  set ytics scale 0.5 $y1_scale
   plot "$input_file" using 1:3 with lines ls 102
 
   set title "System State"
   set ylabel "Temperature"
+  set ytics scale 0.5 $y2_scale
   plot "$input_file" using 1:2 with lines ls 101
 
   set title "Control"
   set ylabel "Flow Rate"
+  set ytics scale 0.5 $y3_scale
   plot "$input_file" using 1:4 with lines ls 103
 
   unset multiplot
@@ -399,8 +428,9 @@ temperature and flows over time, with two Y axis scales to help keep things simi
 
 * Scenarios
 
-To start, let's test a simple scenario where the system is in perfect equilibrium. We should see
-that the flows balance each other out and the system temperature remains the same over time.
+As a starting point let's test a simple scenario where the system is in perfect equilibrium. We
+should see that the flows balance each other out and the system temperature remains the same over
+time.
 
 #+name: equilibrium-scenario
 #+begin_src python :tangle equilibrium.py :results file link :file equilibrium.svg :output-dir img/ :exports both
@@ -418,6 +448,8 @@ that the flows balance each other out and the system temperature remains the sam
 
 #+RESULTS: equilibrium-scenario
 [[file:img/equilibrium.svg]]
+
+As expected, the lines are pretty boring!
 
 A (slightly) more complex example may have a thermal runaway, when the input exceeds the output.
 
@@ -454,11 +486,14 @@ We could also consider a random input, and how it may perturb the system.
   out_flow = lambda t, s: 100 * random.random()
   system = thermal.ThermalSystem(mass, in_flow, out_flow)
   f = fixture.GraphicalFixture("random", system)
-  f.simulate(range(0, 100))
+  f.simulate(range(0, 100), y_scales=(20, 1, 20))
 #+end_src
 
 #+RESULTS: random-scenario
 [[file:img/random.svg]]
+
+Now that we have some confidence that the harness functions as expected, let's integrate the control
+loop.
 
 ** Testing the PID controller
 
@@ -533,7 +568,7 @@ information. What happens if we run the system with only an integral term?
   out_flow = lambda t, s: controller.next(t, s) * 100
   system = thermal.ThermalSystem(mass, in_flow, out_flow)
   f = fixture.GraphicalFixture("pid_i_only", system)
-  f.simulate(range(0, 100))
+  f.simulate(range(0, 100), y_scales=(1, 1, 100))
 #+end_src
 
 #+RESULTS: pid-i-only-scenario
@@ -559,7 +594,7 @@ Lastly, let's try turning on only the derivative term.
   out_flow = lambda t, s: controller.next(t, s) * 100
   system = thermal.ThermalSystem(mass, in_flow, out_flow)
   f = fixture.GraphicalFixture("pid_d_only", system)
-  f.simulate(range(0, 100))
+  f.simulate(range(0, 100), y_scales=(1, 1, 5))
 #+end_src
 
 #+RESULTS: pid-d-only-scenario
@@ -575,7 +610,7 @@ So, what does this show us about how these terms relate? As I outlined in the [[
   defense. It cannot account for the past, but it mitigates the present by trying to offset the
   latest errors.
 - Our /integral/ term is backwards-looking, and tries to clean up residual errors that have been
-  missed by the proportonal term.
+  missed by the proportional term.
 - Lastly, the /derivative/ term helps to damp the system and prevent oscillations.
 
 Generally they should be weighted in approximately that order as well, with the proportional term
@@ -602,7 +637,7 @@ how it does.
   out_flow = lambda t, s: controller.next(t, s) * 10
   system = thermal.ThermalSystem(mass, in_flow, out_flow)
   f = fixture.GraphicalFixture("pid_random", system)
-  f.simulate(range(0, 100))
+  f.simulate(range(0, 100), y_scales=(20, 1, 20))
 #+end_src
 
 #+RESULTS: pid-random-scenario
@@ -636,7 +671,7 @@ to see if we can drive down the oscillations somewhat.
   out_flow = lambda t, s: controller.next(t, s) * 10
   system = thermal.ThermalSystem(mass, in_flow, out_flow)
   f = fixture.GraphicalFixture("pid_random_p", system)
-  f.simulate(range(0, 100))
+  f.simulate(range(0, 100), y_scales=(20, 1, 20))
 #+end_src
 
 #+RESULTS: pid-random-p-scenario

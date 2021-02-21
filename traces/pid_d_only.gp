@@ -20,20 +20,21 @@
     set border 3 back ls 11
     set tics nomirror
     
-    set ytics scale 0.5 20
-    
     set multiplot layout 3,1 rowsfirst
     
     set title "Input"
     set ylabel "Flow Rate"
+    set ytics scale 0.5 1
     plot "traces/pid_d_only.csv" using 1:3 with lines ls 102
     
     set title "System State"
     set ylabel "Temperature"
+    set ytics scale 0.5 1
     plot "traces/pid_d_only.csv" using 1:2 with lines ls 101
     
     set title "Control"
     set ylabel "Flow Rate"
+    set ytics scale 0.5 5
     plot "traces/pid_d_only.csv" using 1:4 with lines ls 103
     
     unset multiplot
